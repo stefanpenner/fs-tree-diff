@@ -134,7 +134,7 @@ describe('FSTree', function() {
         ]);
       });
 
-      it('should diff by mtime', function() {
+      it('should diff by mtime (Number)', function() {
         var result = entries.update([
           { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 10 },
           { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
@@ -142,6 +142,18 @@ describe('FSTree', function() {
 
         expect(result).to.deep.equal([
           { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 10 }
+        ]);
+      });
+
+      it('should diff by mtime (Date)', function() {
+        var date = new Date(10);
+        var result = entries.update([
+          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: date },
+          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
+        ]);
+
+        expect(result).to.deep.equal([
+          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: date }
         ]);
       });
 
