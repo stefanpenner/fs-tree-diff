@@ -286,7 +286,7 @@ describe('FSTree', function() {
       });
     });
 
-    context('\w updates', function() {
+    context('with only unchanged paths', function() {
       beforeEach( function() {
         fsTree = new FSTree({
           files: [
@@ -296,7 +296,7 @@ describe('FSTree', function() {
         });
       });
 
-      it('returns n rm operations', function() {
+      it('returns an empty changeset', function() {
         expect(fsTree.calculatePatch([
           'bar/baz.js',
           'foo.js'
