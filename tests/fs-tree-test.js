@@ -190,7 +190,40 @@ describe('FSTree', function() {
 
   });
 
-  describe('.calculatePatch', function() {
+  describe('.fromPaths', function() {
+    it('creates empty trees', function() {
+      fsTree = FSTree.fromPaths([
+      ]);
+      expect(fsTree.size).to.eq(0);
+    });
+
+    it('creates trees from paths', function() {
+      var result;
+
+      fsTree = FSTree.fromPaths([
+        'a.js',
+        'foo/a.js',
+      ]);
+
+      result = fsTree.calculatePatch(
+        FSTree.fromPaths([
+          'a.js',
+          'foo/b.js',
+        ])
+      );
+
+      expect(result).to.deep.equal([
+        ['unlink', 'foo/a.js'],
+        // This no-op is not fundamental: a future iteration could reasonably
+        // optimize it away
+        ['rmdir', 'foo'],
+        ['mkdir', 'foo'],
+        ['create', 'foo/b.js'],
+      ]);
+    });
+  });
+
+  describe('#calculatePatch', function() {
     context('from an empty tree', function() {
       beforeEach( function() {
         fsTree = new FSTree();
@@ -198,16 +231,16 @@ describe('FSTree', function() {
 
       context('to an empty tree', function() {
         it('returns 0 operations', function() {
-          expect(fsTree.calculatePatch([])).to.deep.equal([]);
+          expect(fsTree.calculatePatch(FSTree.fromPaths([]))).to.deep.equal([]);
         });
       });
 
       context('to a non-empty tree', function() {
         it('returns n create operations', function() {
-          expect(fsTree.calculatePatch([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([
             'bar/baz.js',
             'foo.js',
-          ])).to.deep.equal([
+          ]))).to.deep.equal([
             ['mkdir', 'bar'],
             ['create', 'foo.js'],
             ['create', 'bar/baz.js'],
@@ -218,17 +251,15 @@ describe('FSTree', function() {
 
     context('from a simple non-empty tree', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'bar/baz.js',
-            'foo.js',
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'bar/baz.js',
+          'foo.js',
+        ]);
       });
 
       context('to an empty tree', function() {
         it('returns n rm operations', function() {
-          expect(fsTree.calculatePatch([])).to.deep.equal([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([]))).to.deep.equal([
             ['unlink', 'bar/baz.js'],
             ['rmdir', 'bar'],
             ['unlink', 'foo.js'],
@@ -249,12 +280,14 @@ describe('FSTree', function() {
       });
 
       it('should detect additions', function() {
-        var result = fsTree.calculatePatch([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'a/j.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
+        var result = fsTree.calculatePatch(new FSTree({
+          entries: [
+            { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
+            { relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 },
+            { relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 },
+            { relativePath: 'a/j.js', mode: '0o666', size: 1, mtime: 1 }
+          ]
+        }));
 
         expect(result).to.deep.equal([
           ['create', 'a/j.js']
@@ -262,9 +295,11 @@ describe('FSTree', function() {
       });
 
       it('should detect removals', function() {
-        var result = fsTree.calculatePatch([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
+        var result = fsTree.calculatePatch(new FSTree({
+          entries: [
+            { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }
+          ]
+        }));
 
         expect(result).to.deep.equal([
           ['unlink', 'a/c.js'],
@@ -274,11 +309,13 @@ describe('FSTree', function() {
       });
 
       it('should detect updates', function() {
-        var result = fsTree.calculatePatch([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 2 },
-          { relativePath: 'a/c.js', mode: '0o666', size: 10, mtime: 1 }
-        ]);
+        var result = fsTree.calculatePatch(new FSTree({
+          entries: [
+            { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
+            { relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 2 },
+            { relativePath: 'a/c.js', mode: '0o666', size: 10, mtime: 1 }
+          ]
+        }));
 
         expect(result).to.deep.equal([
           ['change', 'a/c.js'],
@@ -302,14 +339,16 @@ describe('FSTree', function() {
       });
 
       it('catches each update', function() {
-        var result = fsTree.calculatePatch([
-          { relativePath: 'a.js', mode: '0o666', size: 1, mtime: 2 },
-          { relativePath: 'b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'one/a.js', mode: '0o666', size: 10, mtime: 1 },
-          { relativePath: 'one/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'one/two/a.js', mode: '0o667', size: 1, mtime: 1 },
-          { relativePath: 'one/two/b.js', mode: '0o666', size: 1, mtime: 1 },
-        ]);
+        var result = fsTree.calculatePatch(new FSTree({
+          entries: [
+            { relativePath: 'a.js', mode: '0o666', size: 1, mtime: 2 },
+            { relativePath: 'b.js', mode: '0o666', size: 1, mtime: 1 },
+            { relativePath: 'one/a.js', mode: '0o666', size: 10, mtime: 1 },
+            { relativePath: 'one/b.js', mode: '0o666', size: 1, mtime: 1 },
+            { relativePath: 'one/two/a.js', mode: '0o667', size: 1, mtime: 1 },
+            { relativePath: 'one/two/b.js', mode: '0o666', size: 1, mtime: 1 },
+          ]
+        }));
 
         expect(result).to.deep.equal([
           ['change', 'a.js'],
@@ -321,19 +360,17 @@ describe('FSTree', function() {
 
     context('with only unchanged paths', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'bar/baz.js',
-            'foo.js',
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'bar/baz.js',
+          'foo.js',
+        ]);
       });
 
       it('returns an empty changeset', function() {
-        expect(fsTree.calculatePatch([
+        expect(fsTree.calculatePatch(FSTree.fromPaths([
           'bar/baz.js',
           'foo.js'
-        ])).to.deep.equal([
+        ]))).to.deep.equal([
           // when we work with entries, will potentially return updates
         ]);
       });
@@ -342,21 +379,19 @@ describe('FSTree', function() {
 
     context('from a non-empty tree', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'foo/one.js',
-            'foo/two.js',
-            'bar/one.js',
-            'bar/two.js',
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'foo/one.js',
+          'foo/two.js',
+          'bar/one.js',
+          'bar/two.js',
+        ]);
       });
 
       context('with removals', function() {
         it('reduces the rm operations', function() {
-          expect(fsTree.calculatePatch([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([
             'bar/two.js'
-          ])).to.deep.equal([
+          ]))).to.deep.equal([
             ['unlink', 'foo/one.js'],
             ['unlink', 'foo/two.js'],
             ['unlink', 'bar/one.js'],
@@ -367,9 +402,9 @@ describe('FSTree', function() {
 
       context('with removals and additions', function() {
         it('reduces the rm operations', function() {
-          expect(fsTree.calculatePatch([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([
             'bar/three.js'
-          ])).to.deep.equal([
+          ]))).to.deep.equal([
             ['unlink', 'foo/one.js'],
             ['unlink', 'foo/two.js'],
             ['unlink', 'bar/one.js'],
@@ -392,17 +427,15 @@ describe('FSTree', function() {
 
     context('from a deep non-empty tree', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'bar/quz/baz.js',
-            'foo.js',
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'bar/quz/baz.js',
+          'foo.js',
+        ]);
       });
 
       context('to an empty tree', function() {
         it('returns n rm operations', function() {
-          expect(fsTree.calculatePatch([])).to.deep.equal([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([]))).to.deep.equal([
             ['unlink', 'bar/quz/baz.js'],
             ['rmdir', 'bar/quz'],
             ['rmdir', 'bar'],
@@ -414,19 +447,17 @@ describe('FSTree', function() {
 
     context('from a deep non-empty tree \w intermediate entry', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'bar/quz/baz.js',
-            'bar/foo.js',
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'bar/quz/baz.js',
+          'bar/foo.js',
+        ]);
       });
 
       context('to an empty tree', function() {
         it('returns one unlink operation', function() {
-          expect(fsTree.calculatePatch([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([
             'bar/quz/baz.js'
-          ])).to.deep.equal([
+          ]))).to.deep.equal([
             ['unlink', 'bar/foo.js']
           ]);
         });
@@ -435,19 +466,17 @@ describe('FSTree', function() {
 
     context('another nested scenario', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'subdir1/subsubdir1/foo.png',
-            'subdir2/bar.css'
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'subdir1/subsubdir1/foo.png',
+          'subdir2/bar.css'
+        ]);
       });
 
       context('to an empty tree', function() {
         it('returns one unlink operation', function() {
-          expect(fsTree.calculatePatch([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([
             'subdir1/subsubdir1/foo.png'
-          ])).to.deep.equal([
+          ]))).to.deep.equal([
             ['unlink', 'subdir2/bar.css'],
             ['rmdir',  'subdir2']
           ]);
@@ -457,17 +486,15 @@ describe('FSTree', function() {
 
     context('folder => file', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'subdir1/foo'
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'subdir1/foo'
+        ]);
       });
 
       it('it unlinks the file, and rmdir the folder and then creates the file', function() {
-        expect(fsTree.calculatePatch([
+        expect(fsTree.calculatePatch(FSTree.fromPaths([
           'subdir1'
-        ])).to.deep.equal([
+        ]))).to.deep.equal([
           ['unlink', 'subdir1/foo'],
           ['rmdir', 'subdir1'],
           ['create', 'subdir1']
@@ -477,17 +504,15 @@ describe('FSTree', function() {
 
     context('file => folder', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'subdir1'
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'subdir1'
+        ]);
       });
 
       it('it unlinks the file, and makes the folder and then creates the file', function() {
-        expect(fsTree.calculatePatch([
+        expect(fsTree.calculatePatch(FSTree.fromPaths([
           'subdir1/foo'
-        ])).to.deep.equal([
+        ]))).to.deep.equal([
           ['unlink', 'subdir1'],
           ['mkdir', 'subdir1'],
           ['create', 'subdir1/foo']
