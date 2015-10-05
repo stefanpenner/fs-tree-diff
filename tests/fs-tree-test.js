@@ -2,194 +2,60 @@
 
 var expect = require('chai').expect;
 var FSTree = require('../lib/index');
-var Entries = require('../lib/entries');
-
 var context = describe;
 var fsTree;
 
 describe('FSTree', function() {
+
+  function entry(options) {
+    return {
+      relativePath: options.relativePath,
+      mode: options.mode,
+      size: options.size,
+      mtime: options.mtime,
+      isDirectory: function() {
+        return (this.mode & 61440) === 16384;
+      }
+    };
+  };
+
   it('can be instantiated', function() {
     expect(new FSTree()).to.be.an.instanceOf(FSTree);
   });
 
-  describe('Entries', function() {
-    var entries;
-    beforeEach(function() {
-      entries = new Entries([
-        { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-        { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
+  describe('.fromPaths', function() {
+    it('creates empty trees', function() {
+      fsTree = FSTree.fromPaths([ ]);
+      expect(fsTree.size).to.eq(0);
+    });
+
+    it('creates trees from paths', function() {
+      var result;
+
+      fsTree = FSTree.fromPaths([
+        'a.js',
+        'foo/a.js',
+      ]);
+
+      result = fsTree.calculatePatch(
+        FSTree.fromPaths([
+          'a.js',
+          'foo/b.js',
+        ])
+      );
+
+      expect(result).to.deep.equal([
+        ['unlink', 'foo/a.js'],
+        // This no-op is not fundamental: a future iteration could reasonably
+        // optimize it away
+        ['rmdir', 'foo'],
+        ['mkdir', 'foo'],
+        ['create', 'foo/b.js'],
       ]);
     });
-
-    context('identity', function() {
-      it('should return the initial entries', function() {
-        expect(entries.identity()).to.deep.equal([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
-        ]);
-      });
-    });
-
-    context('add', function() {
-      it('should return the added files', function() {
-        var result = entries.add([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 },
-          { relativePath: 'c.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
-
-        expect(result).to.deep.equal([
-          { relativePath: 'c.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
-      });
-
-      it('should handle directories', function() {
-        var result = entries.add([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 },
-          { relativePath: 'c.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'f/', mode: '16384', size: 1, mtime: 1 }
-        ]);
-
-        expect(result).to.deep.equal([
-          { relativePath: 'c.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'f/', mode: '16384', size: 1, mtime: 1 }
-        ]);
-      });
-
-      it('should return an empty array if there is a mismatch', function() {
-        var result = entries.add([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
-        expect(result).to.deep.equal([]);
-      });
-
-      it('should return an empty array if there are no changes', function() {
-        var result = entries.add([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
-        ]);
-        expect(result).to.deep.equal([]);
-      });
-    });
-
-    context('remove', function() {
-      it('should find the removals', function () {
-        var result = entries.remove([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
-
-        expect(result).to.deep.equal([
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
-        ]);
-      });
-
-      it('should find directory removals', function () {
-        var localEntries = new Entries([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'c/', mode: '16384', size: 1, mtime: 1 },
-          { relativePath: 'c/c.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
-
-        var result = localEntries.remove([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
-
-        expect(result).to.deep.equal([
-          { relativePath: 'c/', mode: '16384', size: 1, mtime: 1 },
-          { relativePath: 'c/c.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
-      });
-
-      it('should return an empty array if the file length is the same', function() {
-        var result = entries.remove([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
-        ]);
-
-        expect(result).to.deep.equal([]);
-      });
-
-      it('should return an empty array if their are additions', function() {
-        var result = entries.remove([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 },
-          { relativePath: 'c.js', mode: '0o666', size: 2, mtime: 1 }
-        ]);
-        expect(result).to.deep.equal([]);
-      });
-
-    });
-
-    context('update', function() {
-
-      it('should diff by size', function() {
-        var result = entries.update([
-          { relativePath: 'a/b.js', mode: '0o666', size: 10, mtime: 1 },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
-        ]);
-
-        expect(result).to.deep.equal([
-          { relativePath: 'a/b.js', mode: '0o666', size: 10, mtime: 1 }
-        ]);
-      });
-
-      it('should diff by mtime (Number)', function() {
-        var result = entries.update([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 10 },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
-        ]);
-
-        expect(result).to.deep.equal([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 10 }
-        ]);
-      });
-
-      it('should diff by mtime (Date)', function() {
-        var date = new Date(10);
-        var result = entries.update([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: date },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
-        ]);
-
-        expect(result).to.deep.equal([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: date }
-        ]);
-      });
-
-      it('should diff by mode', function() {
-        var result = entries.update([
-          { relativePath: 'a/b.js', mode: 'foo', size: 1, mtime: 1 },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 }
-        ]);
-
-        expect(result).to.deep.equal([
-          { relativePath: 'a/b.js', mode: 'foo', size: 1, mtime: 1 }
-        ]);
-      });
-
-      it('should return an empty array if their are additions', function() {
-        var result =  entries.remove([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'b.js', mode: '0o666', size: 2, mtime: 1 },
-          { relativePath: 'c.js', mode: '0o666', size: 2, mtime: 1 }
-        ]);
-        expect(result).to.deep.equal([]);
-      });
-
-      it('should return an empty array if there are removals', function() {
-        var result = entries.add([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
-
-        expect(result).to.deep.equal([]);
-      });
-
-    });
-
   });
 
-  describe('.calculatePatch', function() {
+  describe('#calculatePatch', function() {
     context('from an empty tree', function() {
       beforeEach( function() {
         fsTree = new FSTree();
@@ -197,16 +63,16 @@ describe('FSTree', function() {
 
       context('to an empty tree', function() {
         it('returns 0 operations', function() {
-          expect(fsTree.calculatePatch([])).to.deep.equal([]);
+          expect(fsTree.calculatePatch(FSTree.fromPaths([]))).to.deep.equal([]);
         });
       });
 
       context('to a non-empty tree', function() {
         it('returns n create operations', function() {
-          expect(fsTree.calculatePatch([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([
             'bar/baz.js',
             'foo.js',
-          ])).to.deep.equal([
+          ]))).to.deep.equal([
             ['mkdir', 'bar'],
             ['create', 'foo.js'],
             ['create', 'bar/baz.js'],
@@ -217,17 +83,15 @@ describe('FSTree', function() {
 
     context('from a simple non-empty tree', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'bar/baz.js',
-            'foo.js',
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'bar/baz.js',
+          'foo.js',
+        ]);
       });
 
       context('to an empty tree', function() {
         it('returns n rm operations', function() {
-          expect(fsTree.calculatePatch([])).to.deep.equal([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([]))).to.deep.equal([
             ['unlink', 'bar/baz.js'],
             ['rmdir', 'bar'],
             ['unlink', 'foo.js'],
@@ -240,20 +104,22 @@ describe('FSTree', function() {
       beforeEach(function() {
         fsTree = new FSTree({
           entries: [
-            { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 }
+            entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 })
           ]
         });
       });
 
       it('should detect additions', function() {
-        var result = fsTree.calculatePatch([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'a/j.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
+        var result = fsTree.calculatePatch(new FSTree({
+          entries: [
+            entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'a/j.js', mode: '0o666', size: 1, mtime: 1 })
+          ]
+        }));
 
         expect(result).to.deep.equal([
           ['create', 'a/j.js']
@@ -261,9 +127,11 @@ describe('FSTree', function() {
       });
 
       it('should detect removals', function() {
-        var result = fsTree.calculatePatch([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }
-        ]);
+        var result = fsTree.calculatePatch(new FSTree({
+          entries: [
+            entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 })
+          ]
+        }));
 
         expect(result).to.deep.equal([
           ['unlink', 'a/c.js'],
@@ -273,34 +141,68 @@ describe('FSTree', function() {
       });
 
       it('should detect updates', function() {
-        var result = fsTree.calculatePatch([
-          { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-          { relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 2 },
-          { relativePath: 'a/c.js', mode: '0o666', size: 10, mtime: 1 }
-        ]);
+        var result = fsTree.calculatePatch(new FSTree({
+          entries: [
+            entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 2 }),
+            entry({ relativePath: 'a/c.js', mode: '0o666', size: 10, mtime: 1 })
+          ]
+        }));
 
         expect(result).to.deep.equal([
+          ['change', 'c/d.js'],
           ['change', 'a/c.js'],
-          ['change', 'c/d.js']
         ]);
       });
     });
 
-    context('\w updates', function() {
+    context('FSTree with updates at several different depths', function () {
       beforeEach( function() {
         fsTree = new FSTree({
-          files: [
-            'bar/baz.js',
-            'foo.js',
-          ],
+          entries: [
+            entry({ relativePath: 'a.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/a.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/a.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/b.js', mode: '0o666', size: 1, mtime: 1 }),
+          ]
         });
       });
 
-      it('returns n rm operations', function() {
-        expect(fsTree.calculatePatch([
+      it('catches each update', function() {
+        var result = fsTree.calculatePatch(new FSTree({
+          entries: [
+            entry({ relativePath: 'a.js', mode: '0o666', size: 1, mtime: 2 }),
+            entry({ relativePath: 'b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/a.js', mode: '0o666', size: 10, mtime: 1 }),
+            entry({ relativePath: 'one/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/a.js', mode: '0o667', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/b.js', mode: '0o666', size: 1, mtime: 1 }),
+          ]
+        }));
+
+        expect(result).to.deep.equal([
+          ['change', 'a.js'],
+          ['change', 'one/a.js'],
+          ['change', 'one/two/a.js'],
+        ]);
+      });
+    });
+
+    context('with only unchanged paths', function() {
+      beforeEach( function() {
+        fsTree = FSTree.fromPaths([
+          'bar/baz.js',
+          'foo.js',
+        ]);
+      });
+
+      it('returns an empty changeset', function() {
+        expect(fsTree.calculatePatch(FSTree.fromPaths([
           'bar/baz.js',
           'foo.js'
-        ])).to.deep.equal([
+        ]))).to.deep.equal([
           // when we work with entries, will potentially return updates
         ]);
       });
@@ -309,21 +211,19 @@ describe('FSTree', function() {
 
     context('from a non-empty tree', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'foo/one.js',
-            'foo/two.js',
-            'bar/one.js',
-            'bar/two.js',
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'foo/one.js',
+          'foo/two.js',
+          'bar/one.js',
+          'bar/two.js',
+        ]);
       });
 
       context('with removals', function() {
         it('reduces the rm operations', function() {
-          expect(fsTree.calculatePatch([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([
             'bar/two.js'
-          ])).to.deep.equal([
+          ]))).to.deep.equal([
             ['unlink', 'foo/one.js'],
             ['unlink', 'foo/two.js'],
             ['unlink', 'bar/one.js'],
@@ -334,9 +234,9 @@ describe('FSTree', function() {
 
       context('with removals and additions', function() {
         it('reduces the rm operations', function() {
-          expect(fsTree.calculatePatch([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([
             'bar/three.js'
-          ])).to.deep.equal([
+          ]))).to.deep.equal([
             ['unlink', 'foo/one.js'],
             ['unlink', 'foo/two.js'],
             ['unlink', 'bar/one.js'],
@@ -359,17 +259,15 @@ describe('FSTree', function() {
 
     context('from a deep non-empty tree', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'bar/quz/baz.js',
-            'foo.js',
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'bar/quz/baz.js',
+          'foo.js',
+        ]);
       });
 
       context('to an empty tree', function() {
         it('returns n rm operations', function() {
-          expect(fsTree.calculatePatch([])).to.deep.equal([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([]))).to.deep.equal([
             ['unlink', 'bar/quz/baz.js'],
             ['rmdir', 'bar/quz'],
             ['rmdir', 'bar'],
@@ -381,19 +279,17 @@ describe('FSTree', function() {
 
     context('from a deep non-empty tree \w intermediate entry', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'bar/quz/baz.js',
-            'bar/foo.js',
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'bar/quz/baz.js',
+          'bar/foo.js',
+        ]);
       });
 
       context('to an empty tree', function() {
         it('returns one unlink operation', function() {
-          expect(fsTree.calculatePatch([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([
             'bar/quz/baz.js'
-          ])).to.deep.equal([
+          ]))).to.deep.equal([
             ['unlink', 'bar/foo.js']
           ]);
         });
@@ -402,19 +298,17 @@ describe('FSTree', function() {
 
     context('another nested scenario', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'subdir1/subsubdir1/foo.png',
-            'subdir2/bar.css'
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'subdir1/subsubdir1/foo.png',
+          'subdir2/bar.css'
+        ]);
       });
 
       context('to an empty tree', function() {
         it('returns one unlink operation', function() {
-          expect(fsTree.calculatePatch([
+          expect(fsTree.calculatePatch(FSTree.fromPaths([
             'subdir1/subsubdir1/foo.png'
-          ])).to.deep.equal([
+          ]))).to.deep.equal([
             ['unlink', 'subdir2/bar.css'],
             ['rmdir',  'subdir2']
           ]);
@@ -424,17 +318,15 @@ describe('FSTree', function() {
 
     context('folder => file', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'subdir1/foo'
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'subdir1/foo'
+        ]);
       });
 
       it('it unlinks the file, and rmdir the folder and then creates the file', function() {
-        expect(fsTree.calculatePatch([
+        expect(fsTree.calculatePatch(FSTree.fromPaths([
           'subdir1'
-        ])).to.deep.equal([
+        ]))).to.deep.equal([
           ['unlink', 'subdir1/foo'],
           ['rmdir', 'subdir1'],
           ['create', 'subdir1']
@@ -444,17 +336,15 @@ describe('FSTree', function() {
 
     context('file => folder', function() {
       beforeEach( function() {
-        fsTree = new FSTree({
-          files: [
-            'subdir1'
-          ],
-        });
+        fsTree = FSTree.fromPaths([
+          'subdir1'
+        ]);
       });
 
       it('it unlinks the file, and makes the folder and then creates the file', function() {
-        expect(fsTree.calculatePatch([
+        expect(fsTree.calculatePatch(FSTree.fromPaths([
           'subdir1/foo'
-        ])).to.deep.equal([
+        ]))).to.deep.equal([
           ['unlink', 'subdir1'],
           ['mkdir', 'subdir1'],
           ['create', 'subdir1/foo']
@@ -462,28 +352,32 @@ describe('FSTree', function() {
       });
     });
 
-    // context('only folders', function() {
-    //   beforeEach( function() {
-    //     fsTree = new FSTree({
-    //       files: [
-    //         'dir/',
-    //         'dir2/subdir1/',
-    //         'dir3/subdir1/'
-    //       ]
-    //     });
-    //   });
+    context('only folders', function() {
+      beforeEach( function() {
+        fsTree = FSTree.fromPaths([
+          'dir/',
+          'dir2/subdir1/',
+          'dir3/subdir1/'
+        ]);
+      });
 
-    //   it('it unlinks the file, and makes the folder and then creates the file', function() {
-    //     expect(fsTree.calculatePatch([
-    //       'dir2/subdir1/',
-    //       'dir3/',
-    //       'dir4/',
-    //     ])).to.deep.equal([
-    //       ['rmdir', 'dir1'],
-    //       ['rmdir', 'dir3/subdir1'],
-    //       ['mkdir', 'dir4']
-    //     ]);
-    //   });
-    // });
+      it('it unlinks the file, and makes the folder and then creates the file', function() {
+        var result = fsTree.calculatePatch(FSTree.fromPaths([
+          'dir2/subdir1/',
+          'dir3/',
+          'dir4/',
+        ]));
+
+        expect(result).to.deep.equal([
+          ['rmdir', 'dir3/subdir1'],
+          ['rmdir', 'dir'],
+          // This no-op (rmdir dir3; mkdir dir3) is not fundamental: a future
+          // iteration could reasonably optimize it away
+          ['rmdir', 'dir3'],
+          ['mkdir', 'dir3'],
+          ['mkdir', 'dir4']
+        ]);
+      });
+    });
   });
 });
