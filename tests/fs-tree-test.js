@@ -521,28 +521,32 @@ describe('FSTree', function() {
       });
     });
 
-    // context('only folders', function() {
-    //   beforeEach( function() {
-    //     fsTree = new FSTree({
-    //       files: [
-    //         'dir/',
-    //         'dir2/subdir1/',
-    //         'dir3/subdir1/'
-    //       ]
-    //     });
-    //   });
+    context('only folders', function() {
+      beforeEach( function() {
+        fsTree = FSTree.fromPaths([
+          'dir/',
+          'dir2/subdir1/',
+          'dir3/subdir1/'
+        ]);
+      });
 
-    //   it('it unlinks the file, and makes the folder and then creates the file', function() {
-    //     expect(fsTree.calculatePatch([
-    //       'dir2/subdir1/',
-    //       'dir3/',
-    //       'dir4/',
-    //     ])).to.deep.equal([
-    //       ['rmdir', 'dir1'],
-    //       ['rmdir', 'dir3/subdir1'],
-    //       ['mkdir', 'dir4']
-    //     ]);
-    //   });
-    // });
+      it('it unlinks the file, and makes the folder and then creates the file', function() {
+        var result = fsTree.calculatePatch(FSTree.fromPaths([
+          'dir2/subdir1/',
+          'dir3/',
+          'dir4/',
+        ]));
+
+        expect(result).to.deep.equal([
+          ['rmdir', 'dir3/subdir1'],
+          ['rmdir', 'dir'],
+          // This no-op (rmdir dir3; mkdir dir3) is not fundamental: a future
+          // iteration could reasonably optimize it away
+          ['rmdir', 'dir3'],
+          ['mkdir', 'dir3'],
+          ['mkdir', 'dir4']
+        ]);
+      });
+    });
   });
 });
