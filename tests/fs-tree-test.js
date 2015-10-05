@@ -6,14 +6,26 @@ var context = describe;
 var fsTree;
 
 describe('FSTree', function() {
+
+  function entry(options) {
+    return {
+      relativePath: options.relativePath,
+      mode: options.mode,
+      size: options.size,
+      mtime: options.mtime,
+      isDirectory: function() {
+        return (this.mode & 61440) === 16384;
+      }
+    };
+  };
+
   it('can be instantiated', function() {
     expect(new FSTree()).to.be.an.instanceOf(FSTree);
   });
 
   describe('.fromPaths', function() {
     it('creates empty trees', function() {
-      fsTree = FSTree.fromPaths([
-      ]);
+      fsTree = FSTree.fromPaths([ ]);
       expect(fsTree.size).to.eq(0);
     });
 
@@ -92,9 +104,9 @@ describe('FSTree', function() {
       beforeEach(function() {
         fsTree = new FSTree({
           entries: [
-            { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 }
+            entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 })
           ]
         });
       });
@@ -102,10 +114,10 @@ describe('FSTree', function() {
       it('should detect additions', function() {
         var result = fsTree.calculatePatch(new FSTree({
           entries: [
-            { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'a/j.js', mode: '0o666', size: 1, mtime: 1 }
+            entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'a/j.js', mode: '0o666', size: 1, mtime: 1 })
           ]
         }));
 
@@ -117,7 +129,7 @@ describe('FSTree', function() {
       it('should detect removals', function() {
         var result = fsTree.calculatePatch(new FSTree({
           entries: [
-            { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }
+            entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 })
           ]
         }));
 
@@ -131,9 +143,9 @@ describe('FSTree', function() {
       it('should detect updates', function() {
         var result = fsTree.calculatePatch(new FSTree({
           entries: [
-            { relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 2 },
-            { relativePath: 'a/c.js', mode: '0o666', size: 10, mtime: 1 }
+            entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 2 }),
+            entry({ relativePath: 'a/c.js', mode: '0o666', size: 10, mtime: 1 })
           ]
         }));
 
@@ -148,12 +160,12 @@ describe('FSTree', function() {
       beforeEach( function() {
         fsTree = new FSTree({
           entries: [
-            { relativePath: 'a.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'b.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'one/a.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'one/b.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'one/two/a.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'one/two/b.js', mode: '0o666', size: 1, mtime: 1 },
+            entry({ relativePath: 'a.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/a.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/a.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/b.js', mode: '0o666', size: 1, mtime: 1 }),
           ]
         });
       });
@@ -161,12 +173,12 @@ describe('FSTree', function() {
       it('catches each update', function() {
         var result = fsTree.calculatePatch(new FSTree({
           entries: [
-            { relativePath: 'a.js', mode: '0o666', size: 1, mtime: 2 },
-            { relativePath: 'b.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'one/a.js', mode: '0o666', size: 10, mtime: 1 },
-            { relativePath: 'one/b.js', mode: '0o666', size: 1, mtime: 1 },
-            { relativePath: 'one/two/a.js', mode: '0o667', size: 1, mtime: 1 },
-            { relativePath: 'one/two/b.js', mode: '0o666', size: 1, mtime: 1 },
+            entry({ relativePath: 'a.js', mode: '0o666', size: 1, mtime: 2 }),
+            entry({ relativePath: 'b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/a.js', mode: '0o666', size: 10, mtime: 1 }),
+            entry({ relativePath: 'one/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/a.js', mode: '0o667', size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/b.js', mode: '0o666', size: 1, mtime: 1 }),
           ]
         }));
 
