@@ -10,12 +10,13 @@ The possible operations are:
 * `create` – create the specified file
 * `update` – update the specified file
 
-The operations choosen aim to minimize the amount of IO required to apply the patch.
-For example, a naive `rm -rf` of a tree, is actually quite costly, as child directories
-must be recursively traversed, entries stated, all to figure out what first must be deleted.
+The operations choosen aim to minimize the amount of IO required to apply a given patch.
+For example, a naive `rm -rf` of a directory tree is actually quite costly, as child directories
+must be recursively traversed, entries stated.. etc, all to figure out what first must be deleted.
 Since we patch from tree to tree, discovering new files is both wasteful and un-needed.
 
-The operations will also be provided in the correct order. When deleting a large tree, unlink and rmdir operations will be provided depthFirst.
+The operations will also be provided in the correct order. So when deleting a large tree, unlink
+and rmdir operations will be provided depthFirst. Allowing us to safely replay the operations without having to first confirm the FS is as we expected.
 
 A simple example:
 
