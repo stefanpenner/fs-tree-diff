@@ -60,3 +60,31 @@ current.calculatePatch(next) === [
   ['create', 'b/e.js']
 ];
 ```
+
+Now, the above examples do not demonstrate `update` operations. This is because when providing only paths, we do not have sufficient information to check if one entry is merely different from another with the same relativePath.
+
+For this, FSTree supports more complex input structure. To demonstrate, We will use the [walk-sync](https://github.com/joliss/node-walk-sync) module. Which provides higher fidelity input, allowing FSTree to also detect changes. More on what an [entry from walkSync.entries is](https://github.com/joliss/node-walk-sync#entries)
+
+```js
+var walkSync = require('walk-sync');
+
+// path/to/root/foo.js
+// path/to/root/bar.js
+var current = new FSTree({
+  entries: walkSync.entries('path/to/root')
+});
+
+writeFileSync('path/to/root/foo.js', 'new content');
+writeFileSync('path/to/root/baz.js', 'new file');
+
+var next = new FSTree({
+  entries: walkSync.entries('path/to/root')
+});
+
+current.calculatePatch(next) === [
+  ['update', 'foo.js'],
+  ['create', 'baz.js']
+  /* bar stays the same and is left inert*/
+];
+
+```
