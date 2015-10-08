@@ -82,8 +82,8 @@ var next = new FSTree({
 });
 
 current.calculatePatch(next) === [
-  ['update', 'foo.js'],
-  ['create', 'baz.js']
+  ['update', 'foo.js'], // mtime + size changed, so this input is stale and needs updating.
+  ['create', 'baz.js']  // new file, so we should create it
   /* bar stays the same and is left inert*/
 ];
 
