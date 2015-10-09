@@ -55,6 +55,34 @@ describe('FSTree', function() {
     });
   });
 
+  describe('.fromEntries', function() {
+    it('creates empty trees', function() {
+      fsTree = FSTree.fromEntries([ ]);
+      expect(fsTree.size).to.eq(0);
+    });
+
+    it('creates tree from entries', function() {
+      var fsTree = FSTree.fromEntries([
+        entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }),
+        entry({ relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 }),
+        entry({ relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 })
+      ]);
+
+      expect(fsTree.size).to.eq(3);
+
+      var result = fsTree.calculatePatch(FSTree.fromEntries([
+        entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 2 }),
+        entry({ relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 1 }),
+        entry({ relativePath: 'a/c.js', mode: '0o666', size: 1, mtime: 1 })
+        ])
+      );
+
+      expect(result).to.deep.equal([
+        ['change', 'a/b.js']
+      ]);
+    });
+  });
+
   describe('#calculatePatch', function() {
     context('from an empty tree', function() {
       beforeEach( function() {
