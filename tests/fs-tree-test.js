@@ -17,7 +17,7 @@ describe('FSTree', function() {
         return (this.mode & 61440) === 16384;
       }
     };
-  };
+  }
 
   it('can be instantiated', function() {
     expect(new FSTree()).to.be.an.instanceOf(FSTree);
