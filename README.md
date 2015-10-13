@@ -53,7 +53,7 @@ var next = FSTree.fromPaths({
 
 current.calculatePatch(next) === [
   ['unlink', 'a.js'],
-  ['unlink', 'b/e.js'],
+  ['unlink', 'b/f.js'],
   ['create', 'b.js'],
   ['mkdir', 'b/c'],
   ['create', 'b/c/d.js'],
