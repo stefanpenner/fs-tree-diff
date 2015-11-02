@@ -13,6 +13,7 @@
   "author": "Stefan Penner, David J. Hamilton, Chad Hietala",
   "license": "MIT",
   "dependencies": {
+    "debug": "^2.2.0",
     "fast-ordered-set": "^1.0.2"
   },
   "devDependencies": {
