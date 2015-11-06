@@ -27,6 +27,8 @@ describe('FSTree', function() {
     this.mode = options.mode;
     this.size = options.size;
     this.mtime = options.mtime;
+
+    this.linkDir = options.linkDir;
   }
 
   MockEntry.prototype.isDirectory = Entry.prototype.isDirectory;
@@ -47,7 +49,8 @@ describe('FSTree', function() {
       relativePath: options.relativePath,
       mode: options.mode || 0,
       size: options.size || 0,
-      mtime: options.mtime || 0
+      mtime: options.mtime || 0,
+      linkDir: options.linkDir || false,
     });
   }
 
@@ -160,67 +163,140 @@ describe('FSTree', function() {
     });
 
     context('FSTree with entries', function() {
-      beforeEach(function() {
-        fsTree = new FSTree({
-          entries: [
-            file('a/b.js', { size: 1, mtime: 1, mode: '0o666' }),
-            file('c/d.js', { size: 1, mtime: 1, mode: '0o666' }),
-            file('a/c.js', { size: 1, mtime: 1, mode: '0o666' })
-          ]
-        });
-      });
-
-      it('should detect additions', function() {
-        var result = fsTree.calculatePatch(new FSTree({
-          entries: [
-            file('a/b.js', { size: 1, mtime: 1, mode: '0o666' }),
-            file('c/d.js', { size: 1, mtime: 1, mode: '0o666' }),
-            file('a/c.js', { size: 1, mtime: 1, mode: '0o666' }),
-            file('a/j.js', { size: 1, mtime: 1, mode: '0o666' })
-          ]
-        }));
-
-        expect(result).to.deep.equal([
-          ['create', 'a/j.js', file('a/j.js', { size: 1, mtime: 1, mode: '0o666'})]
-        ]);
-      });
-
-      it('should detect removals', function() {
-        var e = entry({
-          relativePath: 'a/b.js',
-          mode: '0o666',
-          size: 1,
-          mtime: 1
+      context('of files', function() {
+        beforeEach(function() {
+          fsTree = new FSTree({
+            entries: [
+              file('a/b.js', { size: 1, mtime: 1, mode: '0o666' }),
+              file('c/d.js', { size: 1, mtime: 1, mode: '0o666' }),
+              file('a/c.js', { size: 1, mtime: 1, mode: '0o666' })
+            ]
+          });
         });
 
-        var result = fsTree.calculatePatch(new FSTree({
-          entries: [e]
-        }));
+        it('should detect additions', function() {
+          var result = fsTree.calculatePatch(new FSTree({
+            entries: [
+              file('a/b.js', { size: 1, mtime: 1, mode: '0o666' }),
+              file('c/d.js', { size: 1, mtime: 1, mode: '0o666' }),
+              file('a/c.js', { size: 1, mtime: 1, mode: '0o666' }),
+              file('a/j.js', { size: 1, mtime: 1, mode: '0o666' })
+            ]
+          }));
 
-        expect(result).to.deep.equal([
-          ['unlink', 'a/c.js', undefined],
-          ['unlink', 'c/d.js', undefined],
-          ['rmdir',  'c',      undefined]
-        ]);
+          expect(result).to.deep.equal([
+            ['create', 'a/j.js', file('a/j.js', { size: 1, mtime: 1, mode: '0o666'})]
+          ]);
+        });
+
+        it('should detect removals', function() {
+          var e = entry({
+            relativePath: 'a/b.js',
+            mode: '0o666',
+            size: 1,
+            mtime: 1
+          });
+
+          var result = fsTree.calculatePatch(new FSTree({
+            entries: [e]
+          }));
+
+          expect(result).to.deep.equal([
+            ['unlink', 'a/c.js', undefined],
+            ['unlink', 'c/d.js', undefined],
+            ['rmdir',  'c',      undefined]
+          ]);
+        });
+
+        it('should detect updates', function() {
+          var entries = [
+            entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 2 }),
+            entry({ relativePath: 'a/c.js', mode: '0o666', size: 10, mtime: 1 })
+          ];
+
+          var result = fsTree.calculatePatch(new FSTree({
+            entries: entries
+          }));
+
+          expect(result).to.deep.equal([
+            ['change', 'c/d.js', entries[1]],
+            ['change', 'a/c.js', entries[2]],
+          ]);
+        });
+
       });
+      context('of directories', function() {
+        it('detects linked directory additions', function() {
+          fsTree = new FSTree({
+            entries: [],
+          });
+          var result = fsTree.calculatePatch(new FSTree({
+            entries: [
+              directory('a', { linkDir: true }),
+            ]
+          }));
 
-      it('should detect updates', function() {
-        var entries = [
-          entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 }),
-          entry({ relativePath: 'c/d.js', mode: '0o666', size: 1, mtime: 2 }),
-          entry({ relativePath: 'a/c.js', mode: '0o666', size: 10, mtime: 1 })
-        ];
+          expect(result).to.deep.equal([
+            ['linkdir', 'a', directory('a', {  linkDir: true })]
+          ]);
+        });
 
-        var result = fsTree.calculatePatch(new FSTree({
-          entries: entries
-        }));
+        it('detects nested linked directory additions', function() {
+          fsTree = new FSTree({
+            entries: [],
+          });
+          var result = fsTree.calculatePatch(new FSTree({
+            entries: [
+              directory('a/b/c/d1', {  linkDir: true }),
+              file('a/b/c/d2'),
+            ]
+          }));
 
-        debugger;
+          expect(result).to.deep.equal([
+            ['mkdir',   'a',        directory('a',        { linkDir: false })],
+            ['mkdir',   'a/b',      directory('a/b',      { linkDir: false })],
+            ['mkdir',   'a/b/c',    directory('a/b/c',    { linkDir: false })],
+            ['linkdir', 'a/b/c/d1', directory('a/b/c/d1', { linkDir: true })],
+            ['create',  'a/b/c/d2', file('a/b/c/d2')],
+          ]);
+        });
 
-        expect(result).to.deep.equal([
-          ['change', 'c/d.js', entries[1]],
-          ['change', 'a/c.js', entries[2]],
-        ]);
+        it('detects linked directory removals', function() {
+          fsTree = new FSTree({
+            entries: [
+              directory('a', { linkDir: true }),
+            ],
+          });
+          var result = fsTree.calculatePatch(new FSTree({
+            entries: []
+          }));
+
+          expect(result).to.deep.equal([
+            ['unlinkdir', 'a', undefined ]
+          ]);
+        });
+
+        it('detects nested linked directory removals', function() {
+          fsTree = new FSTree({
+            entries: [
+              directory('a/b/c/d1', {  linkDir: true }),
+              file('a/b/c/d2'),
+            ],
+          });
+          var result = fsTree.calculatePatch(new FSTree({
+            entries: []
+          }));
+
+          expect(result).to.deep.equal([
+            ['unlinkdir', 'a/b/c/d1', undefined],
+            ['unlink',    'a/b/c/d2', undefined],
+            ['rmdir',     'a/b/c',    undefined],
+            ['rmdir',     'a/b',      undefined],
+            ['rmdir',     'a',        undefined],
+          ]);
+        });
+
       });
     });
 
