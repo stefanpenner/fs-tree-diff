@@ -6,7 +6,9 @@ The possible operations are:
 
 * `unlink` – remove the specified file
 * `rmdir` – remove the specified folder
+* `unlinkdir` - remove the specified folder symlink
 * `mkdir` – create the specified folder
+* `linkdir` - symlink the specified folder
 * `create` – create the specified file
 * `update` – update the specified file
 
