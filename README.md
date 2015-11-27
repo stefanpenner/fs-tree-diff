@@ -10,7 +10,7 @@ The possible operations are:
 * `mkdir` – create the specified folder
 * `linkdir` - symlink the specified folder
 * `create` – create the specified file
-* `update` – update the specified file
+* `change` – update the specified file to reflect changes
 
 The operations choosen aim to minimize the amount of IO required to apply a given patch.
 For example, a naive `rm -rf` of a directory tree is actually quite costly, as child directories
