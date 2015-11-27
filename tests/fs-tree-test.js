@@ -140,6 +140,15 @@ describe('FSTree', function() {
             ['create', 'bar/baz.js', file('bar/baz.js')],
           ]);
         });
+
+        it('throws an error for duplicate paths', function() {
+          expect(function () {
+            fsTree.calculatePatch(FSTree.fromEntries([
+              file('a/foo.js', { size: 1, mtime: 1 }),
+              file('a/foo.js', { size: 1, mtime: 2 }),
+            ]));
+          }).to.throw('Duplicate Entry "a/foo.js"');
+        });
       });
     });
 
