@@ -28,9 +28,9 @@ var current = FSTree.fromPaths([
   'a.js'
 ]);
 
-var next = FSTree.fromPaths({
+var next = FSTree.fromPaths([
   'b.js'
-});
+]);
 
 current.calculatePatch(next) === [
   ['unlink', 'a.js'],
@@ -47,11 +47,11 @@ var current = FSTree.fromPaths([
   'b/f.js'
 ]);
 
-var next = FSTree.fromPaths({
+var next = FSTree.fromPaths([
   'b.js',
   'b/c/d.js'
   'b/e.js'
-});
+]);
 
 current.calculatePatch(next) === [
   ['unlink', 'a.js'],
