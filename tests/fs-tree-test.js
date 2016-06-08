@@ -28,6 +28,8 @@ describe('FSTree', function() {
     this.mode = options.mode;
     this.size = options.size;
     this.mtime = options.mtime;
+
+    this.meta = options.meta;
   }
 
   MockEntry.prototype.isDirectory = Entry.prototype.isDirectory;
@@ -49,6 +51,7 @@ describe('FSTree', function() {
       mode: options.mode || 0,
       size: options.size || 0,
       mtime: options.mtime || 0,
+      meta: options.meta || {},
     });
   }
 
@@ -210,12 +213,12 @@ describe('FSTree', function() {
               file('a/b.js', { mode: '0o666', size: 1, mtime: 1 }),
               file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
               directory('c/'),
-              file('c/d.js', { mode: '0o666', size: 1, mtime: 1 })
+              file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } })
             ]
           });
         });
 
-        it('should detect additions', function() {
+        it('detects additions', function() {
           var result = fsTree.calculatePatch(new FSTree({
             entries: [
               directory('a/'),
@@ -223,7 +226,7 @@ describe('FSTree', function() {
               file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
               file('a/j.js', { mode: '0o666', size: 1, mtime: 1 }),
               directory('c/'),
-              file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: 1 }),
+              file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } }),
             ]
           }));
 
@@ -232,7 +235,7 @@ describe('FSTree', function() {
           ]);
         });
 
-        it('should detect removals', function() {
+        it('detects removals', function() {
           var result = fsTree.calculatePatch(new FSTree({
             entries: [
               directory('a/'),
@@ -241,19 +244,19 @@ describe('FSTree', function() {
           }));
 
           expect(result).to.deep.equal([
-            ['unlink', 'c/d.js', file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: 1 })],
+            ['unlink', 'c/d.js', file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } })],
             ['rmdir',  'c/',     directory('c/')],
             ['unlink', 'a/c.js', file('a/c.js', { mode: '0o666', size: 1, mtime: 1 })],
           ]);
         });
 
-        it('detects updates', function() {
+        it('detects file updates', function() {
           var entries = [
             directory('a/'),
-            file('a/b.js', { mode: '0o666', size: 1, mtime: 1 }),
+            file('a/b.js', { mode: '0o666', size: 1, mtime: 2 }),
             file('a/c.js', { mode: '0o666', size: 10, mtime: 1 }),
             directory('c/'),
-            file('c/d.js', { mode: '0o666', size: 1, mtime: 2 }),
+            file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 1 } }),
           ];
 
           var result = fsTree.calculatePatch(new FSTree({
@@ -261,37 +264,40 @@ describe('FSTree', function() {
           }));
 
           expect(result).to.deep.equal([
+            ['change', 'a/b.js', entries[1]],
             ['change', 'a/c.js', entries[2]],
             ['change', 'c/d.js', entries[4]],
           ]);
         });
 
-        it('does not consider user-supplied entry meta as a change', function () {
+        it('detects directory updates from user-supplied meta', function () {
           var entries = [
-              directory('a/'),
-              file('a/b.js', { mode: '0o666', size: 1, mtime: 1, myMeta: { link: true } }),
-              file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
-              directory('c/'),
-              file('c/d.js', { mode: '0o666', size: 1, mtime: 1 }),
+            directory('a/', { meta: { link: true } }),
+            file('a/b.js', { mode: '0o666', size: 1, mtime: 1 }),
+            file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
+            directory('c/'),
+            file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } })
           ];
 
           var result = fsTree.calculatePatch(new FSTree({
             entries: entries
           }));
 
-          expect(result).to.deep.equal([]);
+          expect(result).to.deep.equal([
+            ['change', 'a/', entries[0]]
+          ]);
         });
 
         it('passes the rhs user-supplied entry on updates', function () {
           var bEntry = file('a/b.js', {
-            mode: '0o666', size: 1, mtime: 2, myMeta: { link: true }
+            mode: '0o666', size: 1, mtime: 2, meta: { link: true }
           });
           var entries = [
               directory('a/'),
               bEntry,
               file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
               directory('c/'),
-              file('c/d.js', { mode: '0o666', size: 1, mtime: 1 }),
+              file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } }),
           ];
 
           var result = fsTree.calculatePatch(new FSTree({

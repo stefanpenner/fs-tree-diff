@@ -125,18 +125,23 @@ different `size`s would still be illegal input).
 ## Change Calculation
 
 When a prior entry has a `relativePath` that matches that of a current entry, a
-change operation is included if any of the following properties differ between
+change operation is included for files if any of the following properties differ between
 the two entries:
 
   - `mode`
   - `size`
   - `mtime`
+  - `meta`
 
-Any other properties that differ between the two entries are treated as
-user-specific meta data and ignored.
+For directories, only `meta` is checked for changes.
+
+For the purposes of `meta` change calculation `null` and `undefined` are treated
+as `{}`.
+
+`meta` should be a flat object of simple properties (eg `{ rev: 1, link: true }`).
 
 This means that if you wanted to, for example, link directories instead of
-creating them, you could annotate your `entry` objects with `meta: { link: true
+creating them, you would annotate your `entry` objects with `meta: { link: true
 }` and check for this meta data when executing the patch returned by
 `calculatePatch`.
 

@@ -6,6 +6,8 @@
 * performance improvements
 * directories in patches always end with a trailing slash
 * fixes various issues related to directory state transitions
+* directories can now receive `change` patches if user-supplied `meta` has
+  property changes
 
 # v0.4.x
 
