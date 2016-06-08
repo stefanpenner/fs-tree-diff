@@ -122,7 +122,7 @@ The public API is:
 must be sorted and path-unique (ie two entries with the same `relativePath` but
 different `size`s would still be illegal input).
 
-## Change Caluclation
+## Change Calculation
 
 When a prior entry has a `relativePath` that matches that of a current entry, a
 change operation is included if any of the following properties differ between
