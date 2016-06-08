@@ -7,6 +7,7 @@ var context = describe;
 var fsTree;
 
 require('chai').config.truncateThreshold = 0;
+
 describe('FSTree', function() {
   function merge(x, y) {
     var result = {};
@@ -67,7 +68,7 @@ describe('FSTree', function() {
           FSTree.fromPaths([
             'a',
             'a',
-          ])
+          ]);
         }).to.throw('expected entries[0]: `a` to be < entries[1]: `a`, but was not. Ensure your input is sorted and has no duplicate paths');
       });
 
@@ -76,7 +77,7 @@ describe('FSTree', function() {
           FSTree.fromPaths([
             'b',
             'a',
-          ])
+          ]);
         }).to.throw('expected entries[0]: `b` to be < entries[1]: `a`, but was not. Ensure your input is sorted and has no duplicate paths');
       });
     });
@@ -99,7 +100,7 @@ describe('FSTree', function() {
       );
 
       expect(result).to.deep.equal([
-        ['unlink', 'foo/a.js', undefined],
+        ['unlink', 'foo/a.js', file('foo/a.js')],
         ['create', 'foo/b.js', file('foo/b.js')]
       ]);
     });
@@ -192,9 +193,9 @@ describe('FSTree', function() {
       context('to an empty tree', function() {
         it('returns n rm operations', function() {
           expect(fsTree.calculatePatch(FSTree.fromPaths([]))).to.deep.equal([
-            ['unlink', 'foo.js',     undefined],
-            ['unlink', 'bar/baz.js', undefined],
-            ['rmdir',  'bar/',        undefined],
+            ['unlink', 'foo.js',     file('foo.js')],
+            ['unlink', 'bar/baz.js', file('bar/baz.js')],
+            ['rmdir',  'bar/',       directory('bar/')],
           ]);
         });
       });
@@ -222,7 +223,7 @@ describe('FSTree', function() {
               file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
               file('a/j.js', { mode: '0o666', size: 1, mtime: 1 }),
               directory('c/'),
-              file('c/d.js', { mode: '0o666', size: 1, mtime: 1 }),
+              file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: 1 }),
             ]
           }));
 
@@ -240,9 +241,9 @@ describe('FSTree', function() {
           }));
 
           expect(result).to.deep.equal([
-            ['unlink', 'c/d.js', undefined],
-            ['rmdir',  'c/',     undefined],
-            ['unlink', 'a/c.js', undefined],
+            ['unlink', 'c/d.js', file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: 1 })],
+            ['rmdir',  'c/',     directory('c/')],
+            ['unlink', 'a/c.js', file('a/c.js', { mode: '0o666', size: 1, mtime: 1 })],
           ]);
         });
 
@@ -377,10 +378,10 @@ describe('FSTree', function() {
             'bar/',
             'bar/two.js'
           ]))).to.deep.equal([
-            ['unlink', 'bar/one.js', undefined],
-            ['unlink', 'foo/two.js', undefined],
-            ['unlink', 'foo/one.js', undefined],
-            ['rmdir',  'foo/',       undefined],
+            ['unlink', 'bar/one.js', file('bar/one.js')],
+            ['unlink', 'foo/two.js', file('foo/two.js')],
+            ['unlink', 'foo/one.js', file('foo/one.js')],
+            ['rmdir',  'foo/',       directory('foo/')],
           ]);
         });
       });
@@ -391,12 +392,12 @@ describe('FSTree', function() {
             'bar/',
             'bar/three.js'
           ]))).to.deep.equal([
-            ['unlink', 'bar/one.js', undefined],
-            ['create', 'bar/three.js', file('bar/three.js')],
-            ['unlink', 'foo/two.js', undefined],
-            ['unlink', 'foo/one.js', undefined],
-            ['rmdir',  'foo/',       undefined],
-            ['unlink', 'bar/two.js', undefined],
+            ['unlink', 'bar/one.js',    file('bar/one.js')],
+            ['create', 'bar/three.js',  file('bar/three.js')],
+            ['unlink', 'foo/two.js',    file('foo/two.js')],
+            ['unlink', 'foo/one.js',    file('foo/one.js')],
+            ['rmdir',  'foo/',          directory('foo/')],
+            ['unlink', 'bar/two.js',    file('bar/two.js')],
           ]);
         });
       });
@@ -415,10 +416,10 @@ describe('FSTree', function() {
       context('to an empty tree', function() {
         it('returns n rm operations', function() {
           expect(fsTree.calculatePatch(FSTree.fromPaths([]))).to.deep.equal([
-            ['unlink', 'foo.js',         undefined],
-            ['unlink', 'bar/quz/baz.js', undefined],
-            ['rmdir', 'bar/quz/',         undefined],
-            ['rmdir', 'bar/',             undefined],
+            ['unlink', 'foo.js',          file('foo.js')],
+            ['unlink', 'bar/quz/baz.js',  file('bar/quz/baz.js')],
+            ['rmdir', 'bar/quz/',         directory('bar/quz/')],
+            ['rmdir', 'bar/',             directory('bar/')],
           ]);
         });
       });
@@ -441,7 +442,7 @@ describe('FSTree', function() {
             'bar/quz/',
             'bar/quz/baz.js'
           ]))).to.deep.equal([
-            ['unlink', 'bar/foo.js', undefined]
+            ['unlink', 'bar/foo.js', file('bar/foo.js')]
           ]);
         });
       });
@@ -465,8 +466,8 @@ describe('FSTree', function() {
             'subdir1/subsubdir1/',
             'subdir1/subsubdir1/foo.png'
           ]))).to.deep.equal([
-            ['unlink', 'subdir2/bar.css', undefined],
-            ['rmdir',  'subdir2/',         undefined]
+            ['unlink', 'subdir2/bar.css', file('subdir2/bar.css')],
+            ['rmdir',  'subdir2/',        directory('subdir2/')]
           ]);
         });
       });
@@ -485,8 +486,8 @@ describe('FSTree', function() {
           'subdir1'
         ]))).to.deep.equal([
           ['create', 'subdir1',     file('subdir1')],
-          ['unlink', 'subdir1/foo', undefined],
-          ['rmdir',  'subdir1/',     undefined],
+          ['unlink', 'subdir1/foo', file('subdir1/foo')],
+          ['rmdir',  'subdir1/',    directory('subdir1/')],
         ]);
       });
     });
@@ -503,7 +504,7 @@ describe('FSTree', function() {
           'subdir1/',
           'subdir1/foo'
         ]))).to.deep.equal([
-          ['unlink', 'subdir1',     undefined],
+          ['unlink', 'subdir1',     file('subdir1')],
           ['mkdir',  'subdir1/',    directory('subdir1/')],
           ['create', 'subdir1/foo', file('subdir1/foo')]
         ]);
@@ -532,9 +533,9 @@ describe('FSTree', function() {
         expect(result).to.deep.equal([
           // This no-op (rmdir dir3; mkdir dir3) is not fundamental: a future
           // iteration could reasonably optimize it away
-          ['mkdir', 'dir4/', directory('dir4/')],
-          ['rmdir', 'dir3/subdir1/', undefined],
-          ['rmdir', 'dir/',          undefined],
+          ['mkdir', 'dir4/',          directory('dir4/')],
+          ['rmdir', 'dir3/subdir1/',  directory('dir3/subdir1/')],
+          ['rmdir', 'dir/',           directory('dir/')],
         ]);
       });
     });
@@ -561,8 +562,8 @@ describe('FSTree', function() {
         var result = fsTree.calculatePatch(newTree);
 
         expect(result).to.deep.equal([
-          ['create', 'parent/a.js', file('parent/a.js')],
-          ['unlink', 'parent/subdir/a.js', undefined],
+          ['create', 'parent/a.js',         file('parent/a.js')],
+          ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
         ]);
       });
 
@@ -576,9 +577,9 @@ describe('FSTree', function() {
         var result = fsTree.calculatePatch(newTree);
 
         expect(result).to.deep.equal([
-          ['create', 'parent/a.js', file('parent/a.js')],
-          ['unlink', 'parent/subdir/a.js', undefined],
-          ['rmdir', 'parent/subdir/', undefined],
+          ['create', 'parent/a.js',         file('parent/a.js')],
+          ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
+          ['rmdir', 'parent/subdir/',       directory('parent/subdir/')],
         ]);
       });
 
@@ -594,8 +595,8 @@ describe('FSTree', function() {
         var result = fsTree.calculatePatch(newTree);
 
         expect(result).to.deep.equal([
-          ['unlink', 'parent/subdir/a.js', undefined],
-          ['mkdir', 'parent/subdir/subdir/', directory('parent/subdir/subdir/')],
+          ['unlink', 'parent/subdir/a.js',        file('parent/subdir/a.js')],
+          ['mkdir', 'parent/subdir/subdir/',      directory('parent/subdir/subdir/')],
           ['create', 'parent/subdir/subdir/a.js', file('parent/subdir/subdir/a.js')],
         ]);
       });
@@ -612,10 +613,10 @@ describe('FSTree', function() {
         var result = fsTree.calculatePatch(newTree);
 
         expect(result).to.deep.equal([
-          ['unlink', 'parent/subdir/a.js', undefined],
-          ['mkdir', 'parent/subdir2/', directory('parent/subdir2/')],
+          ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
+          ['mkdir', 'parent/subdir2/',      directory('parent/subdir2/')],
           ['create', 'parent/subdir2/a.js', file('parent/subdir2/a.js')],
-          ['rmdir', 'parent/subdir/', undefined],
+          ['rmdir', 'parent/subdir/',       directory('parent/subdir/')],
         ]);
       });
     });
