@@ -566,13 +566,14 @@ describe('FSTree', function() {
           ]
         });
         var result = fsTree.calculatePatch(newTree);
-        console.log(JSON.stringify(result, null, 2));
+
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js', undefined],
           ['rmdir', 'parent/subdir', undefined],
           ['create', 'parent/a.js', file('parent/a.js')]
         ]);
       });
+
       it('moving a file into nest subdir does not recreate subdir and parent', function () {
         var newTree = new FSTree({
           entries: [
@@ -583,13 +584,14 @@ describe('FSTree', function() {
           ]
         });
         var result = fsTree.calculatePatch(newTree);
-        console.log(JSON.stringify(result, null, 2));
+
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js', undefined],
           ['mkdir', 'parent/subdir/subdir', directory('parent/subdir/subdir')],
           ['create', 'parent/subdir/subdir/a.js', file('parent/subdir/subdir/a.js')]
         ]);
       });
+
       it('renaming a subdir does not recreate parent', function () {
         var newTree = new FSTree({
           entries: [
@@ -599,7 +601,7 @@ describe('FSTree', function() {
           ]
         });
         var result = fsTree.calculatePatch(newTree);
-        console.log(JSON.stringify(result, null, 2));
+
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js', undefined],
           ['rmdir', 'parent/subdir', undefined],
