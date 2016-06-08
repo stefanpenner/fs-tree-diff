@@ -69,12 +69,14 @@ describe('FSTree', function() {
 
       fsTree = FSTree.fromPaths([
         'a.js',
+        'foo/',
         'foo/a.js',
       ]);
 
       result = fsTree.calculatePatch(
         FSTree.fromPaths([
           'a.js',
+          'foo/',
           'foo/b.js',
         ])
       );
@@ -132,6 +134,7 @@ describe('FSTree', function() {
       context('to a non-empty tree', function() {
         it('returns n create operations', function() {
           expect(fsTree.calculatePatch(FSTree.fromPaths([
+            'bar/',
             'bar/baz.js',
             'foo.js',
           ]))).to.deep.equal([
@@ -155,6 +158,7 @@ describe('FSTree', function() {
     context('from a simple non-empty tree', function() {
       beforeEach( function() {
         fsTree = FSTree.fromPaths([
+          'bar/',
           'bar/baz.js',
           'foo.js',
         ]);
@@ -346,6 +350,7 @@ describe('FSTree', function() {
     context('with unchanged paths', function() {
       beforeEach( function() {
         fsTree = FSTree.fromPaths([
+          'bar/',
           'bar/baz.js',
           'foo.js',
         ]);
@@ -353,6 +358,7 @@ describe('FSTree', function() {
 
       it('returns an empty changeset', function() {
         expect(fsTree.calculatePatch(FSTree.fromPaths([
+          'bar/',
           'bar/baz.js',
           'foo.js'
         ]))).to.deep.equal([
@@ -365,8 +371,10 @@ describe('FSTree', function() {
     context('from a non-empty tree', function() {
       beforeEach( function() {
         fsTree = FSTree.fromPaths([
+          'foo/',
           'foo/one.js',
           'foo/two.js',
+          'bar/',
           'bar/one.js',
           'bar/two.js',
         ]);
@@ -375,6 +383,7 @@ describe('FSTree', function() {
       context('with removals', function() {
         it('reduces the rm operations', function() {
           expect(fsTree.calculatePatch(FSTree.fromPaths([
+            'bar/',
             'bar/two.js'
           ]))).to.deep.equal([
             ['unlink', 'foo/one.js', undefined],
@@ -388,6 +397,7 @@ describe('FSTree', function() {
       context('with removals and additions', function() {
         it('reduces the rm operations', function() {
           expect(fsTree.calculatePatch(FSTree.fromPaths([
+            'bar/',
             'bar/three.js'
           ]))).to.deep.equal([
             ['unlink', 'foo/one.js', undefined],
@@ -413,6 +423,8 @@ describe('FSTree', function() {
     context('from a deep non-empty tree', function() {
       beforeEach( function() {
         fsTree = FSTree.fromPaths([
+          'bar/',
+          'bar/quz/',
           'bar/quz/baz.js',
           'foo.js',
         ]);
@@ -433,14 +445,18 @@ describe('FSTree', function() {
     context('from a deep non-empty tree \w intermediate entry', function() {
       beforeEach( function() {
         fsTree = FSTree.fromPaths([
-          'bar/quz/baz.js',
+          'bar/',
           'bar/foo.js',
+          'bar/quz/',
+          'bar/quz/baz.js',
         ]);
       });
 
       context('to an empty tree', function() {
         it('returns one unlink operation', function() {
           expect(fsTree.calculatePatch(FSTree.fromPaths([
+            'bar/',
+            'bar/quz/',
             'bar/quz/baz.js'
           ]))).to.deep.equal([
             ['unlink', 'bar/foo.js', undefined]
@@ -452,7 +468,10 @@ describe('FSTree', function() {
     context('another nested scenario', function() {
       beforeEach( function() {
         fsTree = FSTree.fromPaths([
+          'subdir1/',
+          'subdir1/subsubdir1/',
           'subdir1/subsubdir1/foo.png',
+          'subdir2/',
           'subdir2/bar.css'
         ]);
       });
@@ -460,6 +479,8 @@ describe('FSTree', function() {
       context('to an empty tree', function() {
         it('returns one unlink operation', function() {
           expect(fsTree.calculatePatch(FSTree.fromPaths([
+            'subdir1/',
+            'subdir1/subsubdir1/',
             'subdir1/subsubdir1/foo.png'
           ]))).to.deep.equal([
             ['unlink', 'subdir2/bar.css', undefined],
@@ -472,6 +493,7 @@ describe('FSTree', function() {
     context('folder => file', function() {
       beforeEach( function() {
         fsTree = FSTree.fromPaths([
+          'subdir1/',
           'subdir1/foo'
         ]);
       });
@@ -496,6 +518,7 @@ describe('FSTree', function() {
 
       it('it unlinks the file, and makes the folder and then creates the file', function() {
         expect(fsTree.calculatePatch(FSTree.fromPaths([
+          'subdir1/',
           'subdir1/foo'
         ]))).to.deep.equal([
           ['unlink', 'subdir1',     undefined],
@@ -516,6 +539,7 @@ describe('FSTree', function() {
 
       it('it unlinks the file, and makes the folder and then creates the file', function() {
         var result = fsTree.calculatePatch(FSTree.fromPaths([
+          'dir2/',
           'dir2/subdir1/',
           'dir3/',
           'dir4/',
@@ -553,11 +577,13 @@ describe('FSTree', function() {
           ]
         });
         var result = fsTree.calculatePatch(newTree);
+
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js', undefined],
           ['create', 'parent/a.js', file('parent/a.js')]
         ]);
       });
+
       it('moving a file out of a subdir and removing the subdir does not recreate parent', function () {
         var newTree = new FSTree({
           entries: [
