@@ -6,9 +6,7 @@ The possible operations are:
 
 * `unlink` – remove the specified file
 * `rmdir` – remove the specified folder
-* `unlinkdir` - remove the specified folder symlink
 * `mkdir` – create the specified folder
-* `linkdir` - symlink the specified folder
 * `create` – create the specified file
 * `change` – update the specified file to reflect changes
 
@@ -17,8 +15,10 @@ For example, a naive `rm -rf` of a directory tree is actually quite costly, as c
 must be recursively traversed, entries stated.. etc, all to figure out what first must be deleted.
 Since we patch from tree to tree, discovering new files is both wasteful and un-needed.
 
-The operations will also be provided in the correct order. So when deleting a large tree, unlink
-and rmdir operations will be provided depthFirst. Allowing us to safely replay the operations without having to first confirm the FS is as we expected.
+The operations will also be provided in a correct order. So when deleting a large tree, unlink
+and rmdir operations will be provided in a correct order (the order will remain
+safe, but may change as the implementation changes). Allowing us to safely
+replay the operations without having to first confirm the FS is as we expected.
 
 A simple example:
 
@@ -63,9 +63,15 @@ current.calculatePatch(next) === [
 ];
 ```
 
-Now, the above examples do not demonstrate `update` operations. This is because when providing only paths, we do not have sufficient information to check if one entry is merely different from another with the same relativePath.
+Now, the above examples do not demonstrate `update` operations. This is because
+when providing only paths, we do not have sufficient information to check if
+one entry is merely different from another with the same relativePath.
 
-For this, FSTree supports more complex input structure. To demonstrate, We will use the [walk-sync](https://github.com/joliss/node-walk-sync) module. Which provides higher fidelity input, allowing FSTree to also detect changes. More on what an [entry from walkSync.entries is](https://github.com/joliss/node-walk-sync#entries)
+For this, FSTree supports more complex input structure. To demonstrate, We will
+use the [walk-sync](https://github.com/joliss/node-walk-sync) module. Which
+provides higher fidelity input, allowing FSTree to also detect changes. More on
+what an [entry from walkSync.entries
+is](https://github.com/joliss/node-walk-sync#entries)
 
 ```js
 var walkSync = require('walk-sync');
@@ -90,3 +96,4 @@ current.calculatePatch(next) === [
 ];
 
 ```
+
