@@ -29,10 +29,34 @@ describe('FSTree', function() {
     this.size = options.size;
     this.mtime = options.mtime;
 
-    this.meta = options.meta;
+    if (options.meta) {
+      this.meta = options.meta;
+    }
   }
 
   MockEntry.prototype.isDirectory = Entry.prototype.isDirectory;
+  MockEntry.prototype.equals = function (otherEntry){
+    var meta = this.meta;
+    var otherMeta = otherEntry.meta;
+    var metaKeys = meta ? Object.keys(meta) : [];
+    var otherMetaKeys = otherMeta ? Object.keys(otherMeta) : [];
+
+    if (metaKeys.length !== Object.keys(otherMetaKeys).length) {
+      return false;
+    } else {
+      for (var i=0; i<metaKeys.length; ++i) {
+        if (meta[metaKeys[i]] !== otherMeta[metaKeys[i]]) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
+  // This is only to make `equals` ignored during `deep.equal` against entries
+  // `fromPaths`
+  Entry.prototype.equals = MockEntry.prototype.equals;
+
 
   function file(relativePath, options) {
     return entry(merge({ relativePath: relativePath }, options));
@@ -51,7 +75,7 @@ describe('FSTree', function() {
       mode: options.mode || 0,
       size: options.size || 0,
       mtime: options.mtime || 0,
-      meta: options.meta || {},
+      meta: options.meta,
     });
   }
 

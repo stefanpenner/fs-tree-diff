@@ -122,6 +122,23 @@ The public API is:
 must be sorted and path-unique (ie two entries with the same `relativePath` but
 different `size`s would still be illegal input).
 
+## Entry
+
+`FSTree.fromEntries` requires you to supply your own `Entry` objects.  Your
+entry objects **must** contain the following properties:
+
+  - `relativePath`
+  - `mode`
+  - `size`
+  - `mtime`
+
+They must also implement the following API:
+
+  - `isDirectory()` `true` *iff* this entry is a directory
+  - `equals(otherEntry)` `false` *iff* `otherEntry` should be considered
+    different from `entry` despite having the same values for `mode`, `size` and
+    `mtime`.
+
 ## Change Calculation
 
 When a prior entry has a `relativePath` that matches that of a current entry, a
@@ -131,8 +148,9 @@ the two entries:
   - `mode`
   - `size`
   - `mtime`
-  - `meta`
 
+In addition to the above check, both file and directory entries are compared to
+their prior
 For directories, only `meta` is checked for changes.
 
 For the purposes of `meta` change calculation `null` and `undefined` are treated
