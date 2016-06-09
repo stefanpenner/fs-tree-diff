@@ -115,6 +115,8 @@ The public API is:
     - `mode`
     - `size`
     - `mtime`
+- `FSTree.prototype.calculatePatch(newTree, isEqual)` calculate a patch against
+  `newTree`.  Optionally specify a custom `isEqual` (see Change Calculation).
 
 ## Input 
 
@@ -135,31 +137,34 @@ entry objects **must** contain the following properties:
 They must also implement the following API:
 
   - `isDirectory()` `true` *iff* this entry is a directory
-  - `equals(otherEntry)` `false` *iff* `otherEntry` should be considered
-    different from `entry` despite having the same values for `mode`, `size` and
-    `mtime`.
 
 ## Change Calculation
 
 When a prior entry has a `relativePath` that matches that of a current entry, a
-change operation is included for files if any of the following properties differ between
-the two entries:
+change operation is included if the new entry is different from the previous
+entry.  This is determined by calling `isEqual`, the optional second argument
+to `calculatePatch`.  If no `isEqual` is provided, a default `isEqual` is used.
+
+The default `isEqual` treats directories as always equal and files as different
+if any of the following properties have changed.
 
   - `mode`
   - `size`
   - `mtime`
 
-In addition to the above check, both file and directory entries are compared to
-their prior
-For directories, only `meta` is checked for changes.
+User specified `isEqual` will often want to use the default `isEqual`, so it is exported on `FSTree`.
 
-For the purposes of `meta` change calculation `null` and `undefined` are treated
-as `{}`.
+Example
 
-`meta` should be a flat object of simple properties (eg `{ rev: 1, link: true }`).
+```
+var defaultIsEqual = FSTtreeDiff.isEqual;
 
-This means that if you wanted to, for example, link directories instead of
-creating them, you would annotate your `entry` objects with `meta: { link: true
-}` and check for this meta data when executing the patch returned by
-`calculatePatch`.
+function isEqualCheckingMeta(a, b) {
+  return defaultIsEqual(a, b) && isMetaEqual(a, b);
+}
+
+function isMetaEqual(a, b) {
+  // ...
+}
+```
 

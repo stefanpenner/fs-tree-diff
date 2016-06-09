@@ -4,6 +4,7 @@ var expect = require('chai').expect;
 var FSTree = require('../lib/index');
 var Entry = require('../lib/entry');
 var context = describe;
+var defaultIsEqual = FSTree.defaultIsEqual;
 var fsTree;
 
 require('chai').config.truncateThreshold = 0;
@@ -35,27 +36,29 @@ describe('FSTree', function() {
   }
 
   MockEntry.prototype.isDirectory = Entry.prototype.isDirectory;
-  MockEntry.prototype.equals = function (otherEntry){
-    var meta = this.meta;
-    var otherMeta = otherEntry.meta;
-    var metaKeys = meta ? Object.keys(meta) : [];
-    var otherMetaKeys = otherMeta ? Object.keys(otherMeta) : [];
+
+  function metaIsEqual(a, b) {
+    var aMeta = a.meta;
+    var bMeta = b.meta;
+    var metaKeys = aMeta ? Object.keys(aMeta) : [];
+    var otherMetaKeys = bMeta ? Object.keys(bMeta) : [];
 
     if (metaKeys.length !== Object.keys(otherMetaKeys).length) {
       return false;
     } else {
       for (var i=0; i<metaKeys.length; ++i) {
-        if (meta[metaKeys[i]] !== otherMeta[metaKeys[i]]) {
+        if (aMeta[metaKeys[i]] !== bMeta[metaKeys[i]]) {
           return false;
         }
       }
     }
 
     return true;
-  };
-  // This is only to make `equals` ignored during `deep.equal` against entries
-  // `fromPaths`
-  Entry.prototype.equals = MockEntry.prototype.equals;
+  }
+
+  function userProvidedIsEqual(a, b) {
+    return  defaultIsEqual(a, b) && metaIsEqual(a, b);
+  }
 
 
   function file(relativePath, options) {
@@ -182,6 +185,12 @@ describe('FSTree', function() {
   });
 
   describe('#calculatePatch', function() {
+    context('input validation', function() {
+      expect(function() {
+          FSTree.fromPaths([]).calculatePatch(FSTree.fromPaths([]), '');
+      }).to.throw(TypeError, 'calculatePatch\'s second argument must be a function');
+    });
+
     context('from an empty tree', function() {
       beforeEach( function() {
         fsTree = new FSTree();
@@ -285,7 +294,7 @@ describe('FSTree', function() {
 
           var result = fsTree.calculatePatch(new FSTree({
             entries: entries
-          }));
+          }), userProvidedIsEqual);
 
           expect(result).to.deep.equal([
             ['change', 'a/b.js', entries[1]],
@@ -305,7 +314,7 @@ describe('FSTree', function() {
 
           var result = fsTree.calculatePatch(new FSTree({
             entries: entries
-          }));
+          }), userProvidedIsEqual);
 
           expect(result).to.deep.equal([
             ['change', 'a/', entries[0]]
