@@ -156,7 +156,7 @@ User specified `isEqual` will often want to use the default `isEqual`, so it is 
 
 Example
 
-```
+```js
 var defaultIsEqual = FSTtreeDiff.isEqual;
 
 function isEqualCheckingMeta(a, b) {
