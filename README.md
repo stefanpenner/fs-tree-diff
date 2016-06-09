@@ -121,8 +121,41 @@ The public API is:
 ## Input 
 
 `FSTree.fromPaths` and `FSTree.fromEntries` both validate their inputs.  Inputs
-must be sorted and path-unique (ie two entries with the same `relativePath` but
-different `size`s would still be illegal input).
+must be sorted, path-unique (ie two entries with the same `relativePath` but
+different `size`s would still be illegal input) and include intermediate
+directories.
+
+For example, the following input is **invaild**
+
+```js
+FSTree.fromPaths([
+  // => missing a/ and a/b/
+  'a/b/c.js'
+]);
+```
+
+To have FSTree sort and expand (include intermediate directories) for you, add
+the option `sortAndExpand`).
+
+```js
+FStree.fromPaths([
+	'a/b/q/r/bar.js',
+	'a/b/c/d/foo.js',
+], { sortAndExpand: true });
+
+// The above is equivalent to
+
+FSTree.fromPaths([
+	'a/',
+	'a/b/',
+	'a/b/c/',
+	'a/b/c/d/',
+	'a/b/c/d/foo.js',
+	'a/b/q/',
+	'a/b/q/r/',
+	'a/b/q/r/bar.js',
+]);
+```
 
 ## Entry
 
