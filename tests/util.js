@@ -13,6 +13,10 @@ require('chai').config.truncateThreshold = 0;
 
 
 describe('commonPrefix', function() {
+  it('computes no common prefix if non exists', function() {
+    expect(commonPrefix('a', 'b')).to.equal('');
+  });
+
   it('computes the common prefix between two strings', function() {
     expect(commonPrefix('a/b/c/', 'a/b/c/d/e/f/', '/')).to.equal('a/b/c/');
   });
