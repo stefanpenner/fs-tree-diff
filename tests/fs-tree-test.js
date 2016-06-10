@@ -82,6 +82,12 @@ describe('FSTree', function() {
     });
   }
 
+  function by(property) {
+    return function pluckProperty(item) {
+      return item[property];
+    };
+  }
+
   it('can be instantiated', function() {
     expect(new FSTree()).to.be.an.instanceOf(FSTree);
   });
@@ -109,6 +115,61 @@ describe('FSTree', function() {
             'a',
           ]);
         }).to.throw('expected entries[0]: `b` to be < entries[1]: `a`, but was not. Ensure your input is sorted and has no duplicate paths');
+      });
+    });
+
+    describe('options', function() {
+      describe('sortAndExpand', function() {
+        it('sorts input entries', function() {
+          fsTree = FSTree.fromPaths([
+            'foo/',
+            'foo/a.js',
+            'bar/',
+            'bar/b.js',
+          ], { sortAndExpand: true });
+
+          expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
+            'bar/',
+            'bar/b.js',
+            'foo/',
+            'foo/a.js',
+          ]);
+        });
+
+        it('expands intermediate directories implied by input entries', function() {
+          fsTree = FSTree.fromPaths([
+            'a/b/q/r/bar.js',
+            'a/b/c/d/foo.js',
+          ], { sortAndExpand: true });
+
+          expect(fsTree.entries).to.deep.equal([
+            directory('a/'),
+            directory('a/b/'),
+            directory('a/b/c/'),
+            directory('a/b/c/d/'),
+            file('a/b/c/d/foo.js'),
+            directory('a/b/q/'),
+            directory('a/b/q/r/'),
+            file('a/b/q/r/bar.js'),
+          ]);
+        });
+
+        it('does not mutate its input', function() {
+          var paths = [
+            'foo/',
+            'foo/a.js',
+            'bar/',
+            'bar/b.js',
+          ];
+          fsTree = FSTree.fromPaths(paths, { sortAndExpand: true });
+
+          expect(paths).to.deep.equal([
+            'foo/',
+            'foo/a.js',
+            'bar/',
+            'bar/b.js',
+          ]);
+        });
       });
     });
 
