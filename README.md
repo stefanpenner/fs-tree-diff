@@ -71,10 +71,10 @@ when providing only paths, we do not have sufficient information to check if
 one entry is merely different from another with the same relativePath.
 
 For this, FSTree supports more complex input structure. To demonstrate, We will
-use the [walk-sync](https://github.com/joliss/node-walk-sync) module. Which
-provides higher fidelity input, allowing FSTree to also detect changes. More on
-what an [entry from walkSync.entries
-is](https://github.com/joliss/node-walk-sync#entries)
+use the [walk-sync](https://github.com/joliss/node-walk-sync) module. 
+**(note: `walk-sync >= 0.2.7` is required`)** Which provides higher fidelity
+input, allowing FSTree to also detect changes. More onwhat an
+[entry from walkSync.entries is](https://github.com/joliss/node-walk-sync#entries)
 
 ```js
 var walkSync = require('walk-sync');
