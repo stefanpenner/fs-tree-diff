@@ -108,8 +108,8 @@ operations the new entry is provided.
 The public API is:
 
 - `FSTree.fromPaths` initialize a tree from an array of string paths.
-- `FSTree.fromEntries` initialize a tree from an object containing an `entries`
-  property.  Each entry must have the following properties (but may have more):
+- `FSTree.fromEntries` initialize a tree from an array of `Entry` objects.
+  Each entry must have the following properties (but may have more):
 
     - `relativePath`
     - `mode`
@@ -170,6 +170,16 @@ entry objects **must** contain the following properties:
 They must also implement the following API:
 
   - `isDirectory()` `true` *iff* this entry is a directory
+
+`FSTree.fromEntries` composes well with the output of `walkSync.entries`:
+
+```js
+var walkSync = require('walk-sync');
+
+// path/to/root/foo.js
+// path/to/root/bar.js
+var current = FSTree.fromEntries(walkSync.entries('path/to/root'));
+```
 
 ## Change Calculation
 
