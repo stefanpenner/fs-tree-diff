@@ -1,6 +1,6 @@
 {
   "name": "fs-tree-diff",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Backs out file tree changes",
   "main": "lib/index.js",
   "scripts": {
@@ -14,6 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "debug": "^2.2.0",
+    "heimdalljs-logger": "^0.1.6",
     "fast-ordered-set": "^1.0.2"
   },
   "devDependencies": {
