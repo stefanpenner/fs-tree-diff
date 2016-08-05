@@ -20,5 +20,9 @@
   "devDependencies": {
     "chai": "^3.3.0",
     "mocha": "^2.3.3"
+  },
+  "repository": {
+    "type": "git",
+    "url":"git://github.com/stefanpenner/fs-tree-diff.git"
   }
 }
