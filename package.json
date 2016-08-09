@@ -19,7 +19,6 @@
   "author": "Stefan Penner, David J. Hamilton, Chad Hietala",
   "license": "MIT",
   "dependencies": {
-    "debug": "^2.2.0",
     "heimdalljs-logger": "^0.1.6",
     "fast-ordered-set": "^1.0.2"
   },
