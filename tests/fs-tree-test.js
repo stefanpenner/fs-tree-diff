@@ -11,6 +11,7 @@ var defaultIsEqual = FSTree.defaultIsEqual;
 var fsTree;
 var walkSync = require('walk-sync');
 var fs = require('fs');
+var md5hex = require('md5hex');
 
 require('chai').config.truncateThreshold = 0;
 
@@ -1040,7 +1041,7 @@ it('detects file updates', function() {
     });
   });
 
-  describe.only('fs', function() {
+  describe('fs', function() {
     var tree;
 
     beforeEach(function() {
@@ -1093,44 +1094,96 @@ it('detects file updates', function() {
       });
 
       it('adds new file', function() {
+        expect(tree.changes()).to.eql([]);
+
         expect(tree.writeFileSync('new-file.txt', 'new file'));
+
+        var changes = tree.changes();
+
+        expect(changes).to.have.deep.property('0.0', 'create');
+        expect(changes).to.have.deep.property('0.1', 'new-file.txt');
+        expect(changes).to.have.deep.property('0.2.relativePath', 'new-file.txt');
+        expect(changes).to.have.deep.property('0.2.checksum', md5hex('new file'));
+        expect(changes).to.have.deep.property('0.2.mode', 0);
+        expect(changes).to.have.deep.property('0.2.mtime');
+        expect(changes).to.have.property('length', 1);
+
         expect(tree.readFileSync('new-file.txt', 'UTF8')).to.eql('new file');
       });
 
       describe('idempotent', function() {
-        it('is idempotent files added this session', function(done) {
+        it('is idempotent files added this session', function() {
           var old = fs.statSync(tree.root + 'hello.txt');
-          setTimeout(function() {
-            // TODO: spy on fs.writeFileSync instead
-            tree.writeFileSync('hello.txt', 'Hello, World!\n');
-            var current = fs.statSync(tree.root + 'hello.txt');
-            try {
-              expect(old).to.eql(current);
-              done();
-            } catch(e) {
-              done(e);
-            }
-          }, 1000);
+          var oldContent = fs.readFileSync(tree.root + 'hello.txt');
+
+          tree.writeFileSync('hello.txt', oldContent);
+
+          var current = fs.statSync(tree.root + 'hello.txt');
+
+          expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
+          expect(old).to.have.property('mode', current.mode);
+          expect(old).to.have.property('size', current.size);
+          expect(tree.changes()).to.eql([]);
         });
 
-        it('is idempotent across session', function(done) {
+        it('is idempotent across session', function() {
           tree.writeFileSync('new-file.txt', 'new file');
+          var changes = tree.changes();
+
+          expect(changes).to.have.deep.property('0.0', 'create');
+          expect(changes).to.have.deep.property('0.1', 'new-file.txt');
+          expect(changes).to.have.deep.property('0.2.relativePath', 'new-file.txt');
+          expect(changes).to.have.deep.property('0.2.checksum', md5hex('new file'));
+          expect(changes).to.have.deep.property('0.2.mode', 0);
+          expect(changes).to.have.deep.property('0.2.mtime');
+
+          var oldmtime = changes[0][2].mtime;
+          expect(changes).to.have.property('length', 1);
+
           var old = fs.statSync(tree.root + 'new-file.txt');
 
-          // TODO: spy on fs.writeFileSync instead
-          setTimeout(function() {
-            debugger;
-            tree.writeFileSync('new-file.txt', 'new file');
-            var current = fs.statSync(tree.root + 'new-file.txt');
-            try {
-              expect(old).to.eql(current);
-              done();
-            } catch(e) {
-              done(e);
-            }
-          }, 1000);
+          tree.writeFileSync('new-file.txt', 'new file');
+
+          var current = fs.statSync(tree.root + 'new-file.txt');
+
+          expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
+          expect(old).to.have.property('mode', current.mode);
+          expect(old).to.have.property('size', current.size);
+
+          var changes = tree.changes();
+          expect(changes).to.have.deep.property('0.0', 'create');
+          expect(changes).to.have.deep.property('0.1', 'new-file.txt');
+          expect(changes).to.have.deep.property('0.2.relativePath', 'new-file.txt');
+          expect(changes).to.have.deep.property('0.2.checksum', md5hex('new file'));
+          expect(changes).to.have.deep.property('0.2.mode', 0);
+          expect(changes).to.have.deep.property('0.2.mtime', oldmtime);
+          expect(changes).to.have.property('length', 1);
         });
       });
+
+      describe('update', function() {
+        it('tracks and correctly updates a file -> file', function() {
+          tree.writeFileSync('new-file.txt', 'new file');
+          var old = fs.statSync(tree.root + 'new-file.txt');
+          tree.writeFileSync('new-file.txt', 'new different content');
+
+          var current = fs.statSync(tree.root + 'new-file.txt');
+
+          expect(old).to.have.property('mtime');
+          expect(old).to.have.property('mode', current.mode);
+          expect(old).to.have.property('size', 8);
+
+          var changes = tree.changes();
+
+          expect(changes).to.have.deep.property('0.0', 'create');
+          expect(changes).to.have.deep.property('0.1', 'new-file.txt');
+          expect(changes).to.have.deep.property('0.2.relativePath', 'new-file.txt');
+          expect(changes).to.have.deep.property('0.2.checksum', md5hex('new different content'));
+          expect(changes).to.have.deep.property('0.2.mode', 0);
+          expect(changes).to.have.deep.property('0.2.mtime');
+          expect(changes).to.have.property('length', 1);
+        });
+      })
     });
 
     describe('.unlinkSync', function() {
