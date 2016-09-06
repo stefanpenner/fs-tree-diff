@@ -1074,6 +1074,13 @@ it('detects file updates', function() {
      * }
      */
     describe('.readFileSync', function() {
+      describe('start/stop', function() {
+        it('does not error when stopped', function() {
+          tree.stop();
+          expect(tree.readFileSync('hello.txt', 'UTF8')).to.eql('Hello, World!\n');
+        });
+      });
+
       it('reads existing file', function() {
         expect(tree.readFileSync('hello.txt', 'UTF8')).to.eql('Hello, World!\n');
       });
@@ -1091,6 +1098,21 @@ it('detects file updates', function() {
         try {
           fs.unlinkSync(__dirname +'/fixtures/new-file.txt');
         } catch(e) { }
+      });
+
+      describe('start/stop', function() {
+        afterEach(function() {
+          tree.start();
+        });
+
+        it('does error when stopped', function() {
+          tree.stop();
+          expect(function() {
+            tree.writeFileSync('hello.txt', 'OMG');
+            expect(fs.readFileSync(tree.root + 'hello.txt', 'UTF8')).to.eql('Hello, World!\n');
+            // did not write to file
+          }).to.throw(/NOOP/);
+        });
       });
 
       it('adds new file', function() {
@@ -1158,6 +1180,10 @@ it('detects file updates', function() {
           expect(changes).to.have.deep.property('0.2.mode', 0);
           expect(changes).to.have.deep.property('0.2.mtime', oldmtime);
           expect(changes).to.have.property('length', 1);
+
+          tree.stop();
+          tree.start();
+          expect(tree.changes()).to.eql([]);
         });
       });
 
