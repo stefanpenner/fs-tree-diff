@@ -1175,7 +1175,7 @@ it('detects file updates', function() {
 
           var changes = tree.changes();
 
-          expect(changes).to.have.deep.property('0.0', 'create');
+          expect(changes).to.have.deep.property('0.0', 'change');
           expect(changes).to.have.deep.property('0.1', 'new-file.txt');
           expect(changes).to.have.deep.property('0.2.relativePath', 'new-file.txt');
           expect(changes).to.have.deep.property('0.2.checksum', md5hex('new different content'));
