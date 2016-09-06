@@ -9,6 +9,8 @@ var Entry = require('../lib/entry');
 var context = describe;
 var defaultIsEqual = FSTree.defaultIsEqual;
 var fsTree;
+var walkSync = require('walk-sync');
+var fs = require('fs');
 
 require('chai').config.truncateThreshold = 0;
 
@@ -32,6 +34,7 @@ describe('FSTree', function() {
     this.mode = options.mode;
     this.size = options.size;
     this.mtime = options.mtime;
+    this.checksum = options.checksum;
 
     if (options.meta) {
       this.meta = options.meta;
@@ -82,6 +85,7 @@ describe('FSTree', function() {
       size: options.size || 0,
       mtime: options.mtime || 0,
       meta: options.meta,
+      checksum: options.checksum
     });
   }
 
@@ -133,9 +137,7 @@ describe('FSTree', function() {
 
           expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
             'bar/',
-            'bar/b.js',
-            'foo/',
-            'foo/a.js',
+            'bar/b.js', 'foo/', 'foo/a.js',
           ]);
         });
 
@@ -202,7 +204,7 @@ describe('FSTree', function() {
 
   describe('.fromEntries', function() {
 
-   describe('input validation', function() {
+    describe('input validation', function() {
       it('throws on duplicate', function() {
         expect(function() {
           FSTree.fromEntries([
@@ -240,7 +242,7 @@ describe('FSTree', function() {
         file('a/b.js', { size: 1, mtime: 2 }),
         file('a/c.js', { size: 1, mtime: 1 }),
         file('c/d.js', { size: 1, mtime: 1 }),
-       ]));
+      ]));
 
       expect(result).to.deep.equal([
         ['change', 'a/b.js', file('a/b.js', { mtime: 2, size: 1 })]
@@ -377,7 +379,7 @@ describe('FSTree', function() {
   describe('#calculatePatch', function() {
     context('input validation', function() {
       expect(function() {
-          FSTree.fromPaths([]).calculatePatch(FSTree.fromPaths([]), '');
+        FSTree.fromPaths([]).calculatePatch(FSTree.fromPaths([]), '');
       }).to.throw(TypeError, 'calculatePatch\'s second argument must be a function');
     });
 
@@ -473,25 +475,25 @@ describe('FSTree', function() {
           ]);
         });
 
-        it('detects file updates', function() {
-          var entries = [
-            directory('a/'),
-            file('a/b.js', { mode: '0o666', size: 1, mtime: 2 }),
-            file('a/c.js', { mode: '0o666', size: 10, mtime: 1 }),
-            directory('c/'),
-            file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 1 } }),
-          ];
+it('detects file updates', function() {
+  var entries = [
+    directory('a/'),
+    file('a/b.js', { mode: '0o666', size: 1, mtime: 2 }),
+    file('a/c.js', { mode: '0o666', size: 10, mtime: 1 }),
+    directory('c/'),
+    file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 1 } }),
+  ];
 
-          var result = fsTree.calculatePatch(new FSTree({
-            entries: entries
-          }), userProvidedIsEqual);
+  var result = fsTree.calculatePatch(new FSTree({
+    entries: entries
+  }), userProvidedIsEqual);
 
-          expect(result).to.deep.equal([
-            ['change', 'a/b.js', entries[1]],
-            ['change', 'a/c.js', entries[2]],
-            ['change', 'c/d.js', entries[4]],
-          ]);
-        });
+  expect(result).to.deep.equal([
+    ['change', 'a/b.js', entries[1]],
+    ['change', 'a/c.js', entries[2]],
+    ['change', 'c/d.js', entries[4]],
+  ]);
+});
 
         it('detects directory updates from user-supplied meta', function () {
           var entries = [
@@ -516,11 +518,11 @@ describe('FSTree', function() {
             mode: '0o666', size: 1, mtime: 2, meta: { link: true }
           });
           var entries = [
-              directory('a/'),
-              bEntry,
-              file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
-              directory('c/'),
-              file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } }),
+            directory('a/'),
+            bEntry,
+            file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
+            directory('c/'),
+            file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } }),
           ];
 
           var result = fsTree.calculatePatch(new FSTree({
@@ -1035,6 +1037,104 @@ describe('FSTree', function() {
         mkdir: 2,
         create: 2
       });
+    });
+  });
+
+  describe.only('fs', function() {
+    var tree;
+
+    beforeEach(function() {
+      tree = new FSTree({
+        entries: walkSync.entries(__dirname + '/fixtures'),
+        root: __dirname + '/fixtures/'
+      });
+    });
+
+    /*
+     * var a = new Plugin();
+     *
+     * a.in = parent; // frozen if not active
+     * a.out = new FSTree();
+     *
+     * a.out.unfreeze();
+     * a.build().finally(function() {
+     *   a.out.freeze();
+     * });
+     *
+     * build() {
+     *   var in = this.input; // frozen reference
+     *   var out = this.output; // writable reference
+     *
+     *   in.changes().forEach(function(patch) {
+     *     var relativePath = patch[0];
+     *
+     *     out.writeFileSync(relativePath, transform(in.readFileSync(relativePath));
+     *   });
+     * }
+     */
+    describe('.readFileSync', function() {
+      it('reads existing file', function() {
+        expect(tree.readFileSync('hello.txt', 'UTF8')).to.eql('Hello, World!\n');
+      });
+
+      it('throws for missing file', function() {
+        // TODO: make sure as close as possible to real ENOENT error
+        expect(function() {
+          tree.readFileSync('missing.txt', 'UTF8');
+        }, /ENOENT.*missing\.txt/);
+      });
+    });
+
+    describe('.writeFileSync', function() {
+      afterEach(function() {
+        try {
+          fs.unlinkSync(__dirname +'/fixtures/new-file.txt');
+        } catch(e) { }
+      });
+
+      it('adds new file', function() {
+        expect(tree.writeFileSync('new-file.txt', 'new file'));
+        expect(tree.readFileSync('new-file.txt', 'UTF8')).to.eql('new file');
+      });
+
+      describe('idempotent', function() {
+        it('is idempotent files added this session', function(done) {
+          var old = fs.statSync(tree.root + 'hello.txt');
+          setTimeout(function() {
+            // TODO: spy on fs.writeFileSync instead
+            tree.writeFileSync('hello.txt', 'Hello, World!\n');
+            var current = fs.statSync(tree.root + 'hello.txt');
+            try {
+              expect(old).to.eql(current);
+              done();
+            } catch(e) {
+              done(e);
+            }
+          }, 1000);
+        });
+
+        it('is idempotent across session', function(done) {
+          tree.writeFileSync('new-file.txt', 'new file');
+          var old = fs.statSync(tree.root + 'new-file.txt');
+
+          // TODO: spy on fs.writeFileSync instead
+          setTimeout(function() {
+            debugger;
+            tree.writeFileSync('new-file.txt', 'new file');
+            var current = fs.statSync(tree.root + 'new-file.txt');
+            try {
+              expect(old).to.eql(current);
+              done();
+            } catch(e) {
+              done(e);
+            }
+          }, 1000);
+        });
+      });
+    });
+
+    describe('.unlinkSync', function() {
+
     });
   });
 });
