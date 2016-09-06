@@ -1057,9 +1057,9 @@ it('detects file updates', function() {
      * a.in = parent; // frozen if not active
      * a.out = new FSTree();
      *
-     * a.out.unfreeze();
+     * a.out.start();
      * a.build().finally(function() {
-     *   a.out.freeze();
+     *   a.out.stop();
      * });
      *
      * build() {
@@ -1111,7 +1111,7 @@ it('detects file updates', function() {
             tree.writeFileSync('hello.txt', 'OMG');
             expect(fs.readFileSync(tree.root + 'hello.txt', 'UTF8')).to.eql('Hello, World!\n');
             // did not write to file
-          }).to.throw(/NOOP/);
+          }).to.throw(/NOPE/);
         });
       });
 
@@ -1213,7 +1213,45 @@ it('detects file updates', function() {
     });
 
     describe('.unlinkSync', function() {
+      describe('start/stop', function() {
+        it('does error when stopped', function() {
+          tree.stop();
+          expect(function() {
+            tree.unlinkSync('hello.txt');
+          }).to.throw(/NOPE/);
+          expect(function() {
+            tree.unlinkSync('hello.txt');
+          }).to.throw(/unlink/);
+        });
+      });
+    });
 
+    describe('.rmdirSync', function() {
+      describe('start/stop', function() {
+        it('does error when stopped', function() {
+          tree.stop();
+          expect(function() {
+            tree.rmdirSync('hello.txt');
+          }).to.throw(/NOPE/);
+          expect(function() {
+            tree.rmdirSync('hello.txt');
+          }).to.throw(/rmdir/);
+        });
+      });
+    });
+
+    describe('.mkdirSync', function() {
+      describe('start/stop', function() {
+        it('does error when stopped', function() {
+          tree.stop();
+          expect(function() {
+            tree.mkdirSync('hello.txt');
+          }).to.throw(/NOPE/);
+          expect(function() {
+            tree.mkdirSync('hello.txt');
+          }).to.throw(/mkdir/);
+        });
+      });
     });
   });
 });
