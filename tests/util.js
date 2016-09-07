@@ -13,7 +13,7 @@ require('chai').config.truncateThreshold = 0;
 
 
 describe('commonPrefix', function() {
-  it('computes no common prefix if non exists', function() {
+  it('computes no common prefix if none exists', function() {
     expect(commonPrefix('a', 'b')).to.equal('');
   });
 
