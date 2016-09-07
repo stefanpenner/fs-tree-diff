@@ -20,14 +20,15 @@
     "heimdalljs-logger": "^0.1.7",
     "object-assign": "^4.1.0",
     "path-posix": "^1.0.0",
-    "symlink-or-copy": "^1.1.8"
+    "symlink-or-copy": "^1.1.8",
+    "matcher-collection": "^1.0.4",
+    "md5hex": "^1.0.0"
   },
   "devDependencies": {
     "chai": "^3.3.0",
     "mocha": "^2.3.3",
     "walk-sync": "^0.3.1",
-    "fs-extra": "^1.0.0",
-    "md5hex": "^1.0.0"
+    "fs-extra": "^1.0.0"
   },
   "repository": {
     "type": "git",

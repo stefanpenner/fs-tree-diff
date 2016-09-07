@@ -1248,10 +1248,87 @@ it('detects file updates', function() {
             tree.mkdirSync('hello.txt');
           }).to.throw(/NOPE/);
           expect(function() {
-            tree.mkdirSync('hello.txt');
+            tree.mkdirSync('hello.txt');freeze
           }).to.throw(/mkdir/);
         });
       });
     });
+  });
+
+  describe('changes', function() {
+    var tree;
+
+    beforeEach(function() {
+      tree = new FSTree({
+        entries: walkSync.entries(__dirname + '/fixtures'),
+        root: __dirname + '/fixtures/'
+      });
+
+      tree.writeFileSync('omg.js', 'hi');
+    })
+
+    afterEach(function() {
+      tree.unlinkSync('omg.js');
+    })
+
+    it('hides no changes if all match', function() {
+      var changes = tree.changes({ include: ['**/*.js']});
+
+      expect(changes).to.have.property('length', 1);
+      expect(changes).to.have.deep.property('0.length', 3);
+      expect(changes).to.have.deep.property('0.0', 'create');
+      expect(changes).to.have.deep.property('0.1', 'omg.js');
+    });
+
+
+    it('hides changes if none match', function() {
+      expect(tree.changes({ include: ['NO-MATCH'] })).to.have.property('length', 0);
+    });
+  });
+
+  describe('match', function() {
+    var tree;
+
+    beforeEach(function() {
+      tree = new FSTree.fromEntries([
+        directory('a/'),
+        directory('a/b/'),
+        directory('a/b/c/'),
+        directory('a/b/c/d/'),
+        file('a/b/c/d/foo.js'),
+        directory('a/b/q/'),
+        directory('a/b/q/r/'),
+        file('a/b/q/r/bar.js'),
+      ]);
+    })
+
+    it('ignores nothing, if all match', function() {
+      var matched = tree.match({ include: ['**/*.js'] });
+
+      expect(matched).to.have.property('length', 8);
+      expect(matched.map(function(entry) { return entry.relativePath; })).to.eql([
+        'a/',
+        'a/b/',
+        'a/b/c/',
+        'a/b/c/d/',
+        'a/b/c/d/foo.js',
+        'a/b/q/',
+        'a/b/q/r/',
+        'a/b/q/r/bar.js',
+      ]);
+    });
+
+    it('ignores those that do not match, if all match', function() {
+      var matched = tree.match({ include: ['a/b/c/**/*'] });
+
+      expect(matched).to.have.property('length', 5);
+      expect(matched.map(function(entry) { return entry.relativePath; })).to.eql([
+        'a/',
+        'a/b/',
+        'a/b/c/',
+        'a/b/c/d/',
+        'a/b/c/d/foo.js',
+      ]);
+    })
   });
 });
