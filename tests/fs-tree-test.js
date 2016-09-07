@@ -1284,6 +1284,13 @@ it('detects file updates', function() {
     it('hides changes if none match', function() {
       expect(tree.changes({ include: ['NO-MATCH'] })).to.have.property('length', 0);
     });
+
+
+    describe('order', function() {
+      // test changes are ordered:
+      // 1. addtions/updates lexicographicaly
+      // 2. removals reverse lexicographicaly
+    });
   });
 
   describe('match', function() {
