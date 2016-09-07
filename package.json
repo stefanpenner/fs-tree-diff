@@ -21,6 +21,7 @@
     "object-assign": "^4.1.0",
     "path-posix": "^1.0.0",
     "symlink-or-copy": "^1.1.8",
+    "lodash.merge": "^4.6.0",
     "matcher-collection": "^1.0.4",
     "md5hex": "^1.0.0"
   },
