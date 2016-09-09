@@ -1,5 +1,6 @@
 var FSTree = require('../');
 
+var mapSeries = require('promise-map-series')
 var expect = require('chai').expect;
 var Plugin = require('broccoli-plugin');
 var merge = require('lodash.merge');
@@ -8,6 +9,7 @@ var fixturify = require('fixturify');
 var fs = require('fs-extra');
 var path = require('path');
 var walkSync = require('walk-sync');
+var RSVP = require('rsvp');
 
 function A(inputs, _options) {
   var options = _options || {};
@@ -23,46 +25,106 @@ function A(inputs, _options) {
   };
 }
 
-A.prototype = Object.create(Plugin.prototype);
-
 // TODO: should be part of broccoli-plugin or something
-Object.defineProperty(A.prototype, 'in', {
-  get: function() {
-    if (this._in) { return this._in; }
+function patchInOut(prototype) {
+  Object.defineProperty(prototype, 'in', {
+    get: function() {
+      if (this._in) { return this._in; }
 
-    // TODO: multiple input paths?
-    var inputNode = this._inputNodes[0];
-    var tree;
+      // TODO: multiple input paths?
+      var inputNode = this._inputNodes[0];
+      var tree;
 
-    if (typeof inputNode === 'object' && inputNode !== null && inputNode.out) {
-      tree = inputNode.out;
-    } else {
-      var inputPath = this.inputPaths[0];
-      var entries = walkSync.entries(inputPath, this.inputWalkOptions);
-      var tree = FSTree.fromEntries(entries, { root: inputPath });
+      if (typeof inputNode === 'object' && inputNode !== null && inputNode.out) {
+        tree = inputNode.out;
+      } else {
+        var inputPath = this.inputPaths[0];
+        var entries = walkSync.entries(inputPath, this.inputWalkOptions);
+        var tree = FSTree.fromEntries(entries, { root: inputPath });
+      }
+
+      return this._in || (this._in = tree);
     }
+  });
 
-    return this._in || (this._in = tree);
-  }
-});
+  Object.defineProperty(prototype, 'out', {
+    get: function() {
+      if (this._out) { return this._out; }
 
-Object.defineProperty(A.prototype, 'out', {
-  get: function() {
-    if (this._out) { return this._out; }
+      var tree = FSTree.fromEntries([], { root: this.outputPath });
 
-    var tree = FSTree.fromEntries([], { root: this.outputPath });
+      return this._out || (this._out = tree);
+    }
+  });
+}
 
-    return this._out || (this._out = tree);
-  }
-});
-// end TODO: should be part of broccoli-plugin or something
-
+A.prototype = Object.create(Plugin.prototype);
+patchInOut(A.prototype);
 A.prototype.constructor = A;
 A.prototype.build = function() {
   this.out.start(); // TODO: broccoli should call this;
   this.out.writeFileSync('input.txt', this.in.readFileSync('input.txt'));
   this.out.stop(); // TODO: broccoli should call this;
 };
+
+function Filter(nodes, options) {
+  Plugin.call(this, nodes, options);
+  this._persistentOutput = true;
+}
+
+Filter.prototype = Object.create(Plugin.prototype);
+patchInOut(Filter.prototype);
+Filter.prototype.build = function() {
+  var plugin = this;
+  this.out.start(); // TODO: broccoli should call this;
+  return mapSeries(this.in.changes(), function(change) {
+    var operation = change[0];
+    var relativePath = change[1];
+    var entry = change[2];
+
+    switch(operation) {
+      case 'create': return plugin.processFile(relativePath, entry);
+      case 'change': return plugin.processFile(relativePath, entry);
+      case 'unlink': return plugin.out.unlinkSync(relativePath);
+      case 'rmdir' : return plugin.out.rmdirSync(relativePath);
+      case 'mkdir' : return plugin.out.mkdir(relativePath);
+    }
+  }).finally(function() {
+    plugin.out.stop(); // TODO: broccoli should call this;
+  });
+};
+
+Filter.prototype.processFile = function(relativePath, entry) {
+  var plugin = this;
+
+  return new RSVP.Promise(function(resolve) {
+    resolve(plugin._process(relativePath, entry));
+  }).then(function(outputPath) {
+    plugin.out.writeFileSync(relativePath, outputPath);
+  });
+};
+
+// hook for caching
+Filter.prototype._process = function(relativePath, entry) {
+  var input  = this.in.readFileSync(relativePath, 'UTF8');
+  var plugin = this;
+
+  return new RSVP.Promise(function(resolve) {
+    resolve(plugin.processString(input, relativePath));
+  });
+};
+
+Filter.prototype.processString = function(string, relativePath) {
+  return string + '!processed!' + relativePath;
+};
+
+function Concat(nodes, options) {
+  Plugin.call(this, nodes, options);
+  this._persistentOutput = true;
+}
+
+Concat.prototype = Object.create(Plugin.prototype);
+patchInOut(Concat.prototype)
 
 describe('BroccoliPlugins', function() {
 
@@ -74,7 +136,7 @@ describe('BroccoliPlugins', function() {
     fs.remove(INPUT_PATH)
   });
 
-  it('works', function() {
+  it('works basic', function() {
     fixturify.writeSync(INPUT_PATH, { 'input.txt': 'hello, world!' });
 
     var a = new A([INPUT_PATH]);
@@ -99,6 +161,77 @@ describe('BroccoliPlugins', function() {
       return builder.build();
     }).then(function(result) {
       expect(fs.readFileSync(result.directory + '/input.txt', 'UTF8')).to.eql('goodnight, world!')
+      var changes = a.out.changes();
+      expect(changes).to.have.deep.property('0.0', 'change');
+      expect(changes).to.have.deep.property('0.1', 'input.txt');
+    });
+  });
+
+  it('works patches', function() {
+    fixturify.writeSync(INPUT_PATH, { 'input.txt': 'hello, world!' });
+
+    var a = new A([INPUT_PATH]);
+    var b = new A([a]);
+    var f = new Filter([a]);
+
+    var builder = new Builder(f);
+
+    return builder.build().then(function(result) {
+      expect(fs.readFileSync(result.directory + '/input.txt', 'UTF8')).to.eql('hello, world!!processed!input.txt')
+      var changes = a.out.changes();
+      expect(changes).to.have.deep.property('0.0', 'create');
+      expect(changes).to.have.deep.property('0.1', 'input.txt');
+      return builder.build();
+    }).then(function(result) {
+      // output shoujld be the same
+      expect(fs.readFileSync(result.directory + '/input.txt', 'UTF8')).to.eql('hello, world!!processed!input.txt')
+
+      // no changes
+      expect(a.out.changes()).to.eql([]);
+
+      fixturify.writeSync(INPUT_PATH, { 'input.txt': 'goodnight, world!' });
+      return builder.build();
+    }).then(function(result) {
+      expect(fs.readFileSync(result.directory + '/input.txt', 'UTF8')).to.eql('goodnight, world!!processed!input.txt')
+      var changes = a.out.changes();
+      expect(changes).to.have.deep.property('0.0', 'change');
+      expect(changes).to.have.deep.property('0.1', 'input.txt');
+    });
+  });
+
+
+  it('concat', function() {
+    fixturify.writeSync(INPUT_PATH, {
+      'a.txt': 'a: hello, world!',
+      'b.txt': 'b: hello, world!'
+    });
+
+    var a = new A([INPUT_PATH]);
+    var b = new A([a]);
+    var f = new Filter([a]);
+    var c = new Concat([f], {
+      outputFile: 'out.txt'
+    });
+
+    var builder = new Builder(f);
+
+    return builder.build().then(function(result) {
+      expect(fs.readFileSync(result.directory + '/input.txt', 'UTF8')).to.eql('hello, world!!processed!input.txt')
+      var changes = a.out.changes();
+      expect(changes).to.have.deep.property('0.0', 'create');
+      expect(changes).to.have.deep.property('0.1', 'input.txt');
+      return builder.build();
+    }).then(function(result) {
+      // output shoujld be the same
+      expect(fs.readFileSync(result.directory + '/input.txt', 'UTF8')).to.eql('hello, world!!processed!input.txt')
+
+      // no changes
+      expect(a.out.changes()).to.eql([]);
+
+      fixturify.writeSync(INPUT_PATH, { 'input.txt': 'goodnight, world!' });
+      return builder.build();
+    }).then(function(result) {
+      expect(fs.readFileSync(result.directory + '/input.txt', 'UTF8')).to.eql('goodnight, world!!processed!input.txt')
       var changes = a.out.changes();
       expect(changes).to.have.deep.property('0.0', 'change');
       expect(changes).to.have.deep.property('0.1', 'input.txt');
