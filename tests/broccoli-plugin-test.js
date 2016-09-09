@@ -11,12 +11,12 @@ var path = require('path');
 var walkSync = require('walk-sync');
 var RSVP = require('rsvp');
 
-function A(inputs, _options) {
+
+function NewPlugin(inputs, _options) {
   var options = _options || {};
 
   Plugin.call(this, inputs, options);
 
-  this._persistentOutput = true;
   this._in = this._out = undefined;
   this._inWasPolyfilled = false;
 
@@ -26,45 +26,50 @@ function A(inputs, _options) {
   };
 }
 
-// TODO: should be part of broccoli-plugin or something
-function patchInOut(prototype) {
-  Object.defineProperty(prototype, 'in', {
-    get: function() {
-      if (this._in && !this._inWasPolyfilled) { return this._in; }
+NewPlugin.prototype = Object.create(Plugin.prototype);
+NewPlugin.prototype.constructor = NewPlugin;
 
-      // TODO: multiple input paths?
-      var inputNode = this._inputNodes[0];
-      var tree;
+Object.defineProperty(NewPlugin.prototype, 'in', {
+  get: function() {
+    if (this._in && !this._inWasPolyfilled) { return this._in; }
 
-      if (typeof inputNode === 'object' && inputNode !== null && inputNode.out) {
-        tree = inputNode.out;
-      } else {
-        // warn polyfill
-        this._inWasPolyfilled = true; // this exists
-        var lastTree = this._lastInTree || FSTree.fromEntries([]);
-        var inputPath = this.inputPaths[0];
-        var entries = walkSync.entries(inputPath, this.inputWalkOptions);
-        tree = this._lastInTree = FSTree.fromEntries(entries, { root: inputPath });
-        tree._changes = lastTree.calculatePatch(tree);
-      }
+    // TODO: multiple input paths?
+    var inputNode = this._inputNodes[0];
+    var tree;
 
-      return this._in || (this._in = tree);
+    if (typeof inputNode === 'object' && inputNode !== null && inputNode.out) {
+      tree = inputNode.out;
+    } else {
+      // warn polyfill
+      this._inWasPolyfilled = true; // this exists
+      var lastTree = this._lastInTree || FSTree.fromEntries([]);
+      var inputPath = this.inputPaths[0];
+      var entries = walkSync.entries(inputPath, this.inputWalkOptions);
+      tree = this._lastInTree = FSTree.fromEntries(entries, { root: inputPath });
+      tree._changes = lastTree.calculatePatch(tree);
     }
-  });
 
-  Object.defineProperty(prototype, 'out', {
-    get: function() {
-      if (this._out) { return this._out; }
+    return this._in || (this._in = tree);
+  }
+});
 
-      var tree = FSTree.fromEntries([], { root: this.outputPath });
+Object.defineProperty(NewPlugin.prototype, 'out', {
+  get: function() {
+    if (this._out) { return this._out; }
 
-      return this._out || (this._out = tree);
-    }
-  });
+    var tree = FSTree.fromEntries([], { root: this.outputPath });
+
+    return this._out || (this._out = tree);
+  }
+});
+
+function A(inputs, options) {
+  NewPlugin.call(this, inputs, options);
+
+  this._persistentOutput = true;
 }
 
-A.prototype = Object.create(Plugin.prototype);
-patchInOut(A.prototype);
+A.prototype = Object.create(NewPlugin.prototype);
 A.prototype.constructor = A;
 A.prototype.build = function() {
   var plugin = this;
@@ -93,13 +98,12 @@ A.prototype.build = function() {
 };
 
 function Filter(nodes, options) {
-  Plugin.call(this, nodes, options);
+  NewPlugin.call(this, nodes, options);
   this._persistentOutput = true;
-  this._inWasPolyfilled = false;
 }
 
-Filter.prototype = Object.create(Plugin.prototype);
-patchInOut(Filter.prototype);
+Filter.prototype = Object.create(NewPlugin.prototype);
+Filter.prototype.constructor = Filter;
 Filter.prototype.build = function() {
   var plugin = this;
   this.out.start(); // TODO: broccoli should call this;
@@ -145,20 +149,21 @@ Filter.prototype.processString = function(string, relativePath) {
 };
 
 function Concat(nodes, options) {
-  Plugin.call(this, nodes, options);
-  this.outputFile = options.outputFile;
+  NewPlugin.call(this, nodes, options);
   this._persistentOutput = true;
+  this.outputFile = options.outputFile;
   this.relativePathToPosition = Object.create(null);
   this.output = [ ];
   this.deleted = [ ];
-  this._inWasPolyfilled = false;
 }
 
-Concat.prototype = Object.create(Plugin.prototype);
-patchInOut(Concat.prototype);
+Concat.prototype = Object.create(NewPlugin.prototype);
+Concat.prototype.constructor = Concat;
 
 Concat.prototype.build = function() {
   var output = '';
+
+  this.out.start(); // TODO: should be in base-class;
 
   this.in.changes().forEach(function(change) {
     var operation = change[0];
@@ -174,6 +179,8 @@ Concat.prototype.build = function() {
   }, this);
 
   this.out.writeFileSync(this.outputFile, this.output.join('\n'));
+
+  this.out.stop(); // TODO: should be in base-class;
 };
 
 Concat.prototype.create = function(relativePath) {
@@ -208,7 +215,7 @@ Concat.prototype.remove = function(relativePath) {
 };
 
 describe('BroccoliPlugins', function() {
-  var INPUT_PATH = path.resolve(__dirname , '/../tmp/testdir');
+  var INPUT_PATH = path.resolve(__dirname , '../tmp/testdir');
   beforeEach(function() {
     fs.mkdirpSync(INPUT_PATH)
   });
