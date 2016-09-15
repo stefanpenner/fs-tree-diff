@@ -1,5 +1,9 @@
 # master
 
+# v0.5.3
+
+* Add `FSTree.prototype.addEntries` thanks @chriseppstein
+
 # v0.5.2
 
 * bump version of heimdalljs-logger
