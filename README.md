@@ -119,8 +119,11 @@ The public API is:
   `newTree`.  Optionally specify a custom `isEqual` (see Change Calculation).
 - `FSTree.prototype.addEntries(entries, options)` adds entries to an
   existing tree. Options are the same as for `FSTree.fromEntries`.
+  Entries added with the same path will overwrite any existing entries.
 - `FSTree.prototype.addPaths(paths, options)` adds paths to an
   existing tree. Options are the same as for `FSTree.fromPaths`.
+  If entries already exist for any of the paths added, those entries will
+  be updated.
 
 ## Input 
 
