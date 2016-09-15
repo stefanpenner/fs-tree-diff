@@ -117,10 +117,15 @@ The public API is:
     - `mtime`
 - `FSTree.prototype.calculatePatch(newTree, isEqual)` calculate a patch against
   `newTree`.  Optionally specify a custom `isEqual` (see Change Calculation).
+- `FSTree.prototype.addEntries(entries, options)` adds entries to an
+  existing tree. Options are the same as for `FSTree.fromEntries`.
+- `FSTree.prototype.addPaths(paths, options)` adds paths to an
+  existing tree. Options are the same as for `FSTree.fromPaths`.
 
 ## Input 
 
-`FSTree.fromPaths` and `FSTree.fromEntries` both validate their inputs.  Inputs
+`FSTree.fromPaths`, `FSTree.fromEntries`, `FSTree.prototype.addPaths`,
+and `FSTree.prototype.addEntries` all validate their inputs.  Inputs
 must be sorted, path-unique (ie two entries with the same `relativePath` but
 different `size`s would still be illegal input) and include intermediate
 directories.

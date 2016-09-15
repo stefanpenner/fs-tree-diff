@@ -245,6 +245,132 @@ describe('FSTree', function() {
     });
   });
 
+  describe('adding new entries', function() {
+    context(".addEntries", function() {
+      context('input validation', function() {
+        it('requires an array', function() {
+          expect(function() {
+              FSTree.fromPaths([]).addEntries(file('a.js'));
+          }).to.throw(TypeError, 'entries must be an array');
+        });
+
+        it('throws on duplicate', function() {
+          expect(function() {
+            FSTree.fromEntries([]).addEntries([
+              file('a', { size: 1, mtime: 1 }),
+              file('a', { size: 1, mtime: 2 }),
+            ]);
+          }).to.throw('expected entries[0]: `a` to be < entries[1]: `a`, but was not. Ensure your input is sorted and has no duplicate paths');
+        });
+
+        it('throws on unsorted', function() {
+          expect(function() {
+            FSTree.fromEntries([]).addEntries([
+              file('b'),
+              file('a'),
+            ]);
+          }).to.throw('expected entries[0]: `b` to be < entries[1]: `a`, but was not. Ensure your input is sorted and has no duplicate paths');
+        });
+      });
+
+      it('inserts one file into sorted location', function() {
+        var result;
+
+        fsTree = FSTree.fromPaths([
+          'a.js',
+          'foo/',
+          'foo/a.js',
+        ]);
+
+        fsTree.addEntries([file('b.js', { size: 1, mtime: 1 })]);
+
+        expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
+          'a.js',
+          'b.js',
+          'foo/',
+          'foo/a.js',
+        ]);
+      });
+
+      it('inserts several entries', function() {
+        var result;
+
+        fsTree = FSTree.fromPaths([
+          'a.js',
+          'foo/',
+          'foo/a.js',
+        ]);
+
+        fsTree.addEntries([
+          file('bar/b.js', { size: 10, mtime: 10 }),
+          file('1.js'),
+          file('foo/bip/img.jpg'),
+        ], {sortAndExpand: true});
+
+        expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
+          '1.js',
+          'a.js',
+          'bar/',
+          'bar/b.js',
+          'foo/',
+          'foo/a.js',
+          'foo/bip/',
+          'foo/bip/img.jpg',
+        ]);
+      });
+
+      it('replaces duplicates', function() {
+        var result;
+
+        fsTree = FSTree.fromPaths([
+          'a.js',
+          'foo/',
+          'foo/a.js',
+        ]);
+
+        expect(fsTree.entries[2].mtime).to.equal(0);
+
+        fsTree.addEntries([file('foo/a.js', { size: 10, mtime: 10 })], {sortAndExpand: true});
+
+        expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
+          'a.js',
+          'foo/',
+          'foo/a.js',
+        ]);
+        expect(fsTree.entries[2].mtime).to.equal(10);
+      });
+    });
+
+    context(".addPaths", function() {
+      it("passes through to .addEntries", function() {
+        var result;
+
+        fsTree = FSTree.fromPaths([
+          'a.js',
+          'foo/',
+          'foo/a.js',
+        ]);
+
+        fsTree.addPaths([
+          'bar/b.js',
+          '1.js',
+          'foo/bip/img.jpg'
+        ], {sortAndExpand: true});
+
+        expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
+          '1.js',
+          'a.js',
+          'bar/',
+          'bar/b.js',
+          'foo/',
+          'foo/a.js',
+          'foo/bip/',
+          'foo/bip/img.jpg',
+        ]);
+      });
+    });
+  });
+
   describe('#calculatePatch', function() {
     context('input validation', function() {
       expect(function() {
