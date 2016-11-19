@@ -72,7 +72,7 @@ when providing only paths, we do not have sufficient information to check if
 one entry is merely different from another with the same relativePath.
 
 For this, FSTree supports more complex input structure. To demonstrate, We will
-use the [walk-sync](https://github.com/joliss/node-walk-sync) module. 
+use the [walk-sync](https://github.com/joliss/node-walk-sync) module.
 **(note: `walk-sync >= 0.2.7` is required`)** Which provides higher fidelity
 input, allowing FSTree to also detect changes. More on what an
 [entry from walkSync.entries is](https://github.com/joliss/node-walk-sync#entries)
@@ -125,8 +125,11 @@ The public API is:
   existing tree. Options are the same as for `FSTree.fromPaths`.
   If entries already exist for any of the paths added, those entries will
   be updated.
+- `Entry.fromStat(relativePath, stat)` creates an `Entry` from a given path and
+  [`fs.Stats`](https://nodejs.org/api/fs.html#fs_class_fs_stats) object. It can
+  then be used with `fromEntries` or `addEntries`.
 
-## Input 
+## Input
 
 `FSTree.fromPaths`, `FSTree.fromEntries`, `FSTree.prototype.addPaths`,
 and `FSTree.prototype.addEntries` all validate their inputs.  Inputs
