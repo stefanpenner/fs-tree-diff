@@ -1,4 +1,5 @@
-# fs-tree-diff [![Build Status](https://travis-ci.org/stefanpenner/fs-tree-diff.svg?branch=master)](https://travis-ci.org/stefanpenner/fs-tree-diff)
+# fs-tree-diff [![Build Status](https://travis-ci.org/stefanpenner/fs-tree-diff.svg?branch=master)](https://travis-ci.org/stefanpenner/fs-tree-diff) [![Build status](https://ci.appveyor.com/api/projects/status/qmhx48hrquq08fam/branch/master?svg=true)](https://ci.appveyor.com/project/embercli/fs-tree-diff/branch/master)
+
 
 FSTree provides the means to calculate a patch (set of operations) between one file system tree and another.
 
