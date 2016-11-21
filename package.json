@@ -4,7 +4,7 @@
   "description": "Backs out file tree changes",
   "main": "lib/index.js",
   "files": [
-    "lib/"
+    "lib"
   ],
   "scripts": {
     "test": "mocha tests/",
@@ -12,9 +12,6 @@
   },
   "keywords": [
     "broccoli"
-  ],
-  "files": [
-    "lib"
   ],
   "author": "Stefan Penner, David J. Hamilton, Chad Hietala",
   "license": "MIT",
@@ -24,10 +21,11 @@
   },
   "devDependencies": {
     "chai": "^3.3.0",
+    "fs-extra": "^1.0.0",
     "mocha": "^2.3.3"
   },
   "repository": {
     "type": "git",
-    "url":"git://github.com/stefanpenner/fs-tree-diff.git"
+    "url": "git://github.com/stefanpenner/fs-tree-diff.git"
   }
 }
