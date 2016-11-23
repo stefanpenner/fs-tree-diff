@@ -116,6 +116,9 @@ The public API is:
     - `mode`
     - `size`
     - `mtime`
+- `FSTree.applyPatch(inputDir, outputDir, patch, delegate)` applies the given
+  patch from the input directory to the output directory. You can optionally
+  provide a delegate object to handle individual types of patch operations.
 - `FSTree.prototype.calculatePatch(newTree, isEqual)` calculate a patch against
   `newTree`.  Optionally specify a custom `isEqual` (see Change Calculation).
 - `FSTree.prototype.addEntries(entries, options)` adds entries to an
@@ -223,3 +226,33 @@ function isMetaEqual(a, b) {
 }
 ```
 
+## Patch Application
+
+When you want to apply changes from one tree to another easily, you can use the
+`FSTree.applyPatch` method. For example, given:
+
+```js
+var patch = oldInputTree.calculatePatch(newInputTree);
+var inputDir = 'src';
+var outputDir = 'dist';
+FSTree.applyPatch(inputDir, outputDir, patch);
+```
+
+It will apply the patch changes to `dist` while using `src` as a reference for
+non-destructive operations (`mkdir`, `create`, `change`). You can optionally
+provide a delegate object to handle applying specific types of operations:
+
+```js
+var createCount = 0;
+FSTree.applyPatch(inputDir, outputDir, patch, {
+  create: function(inputPath, outputPath, relativePath) {
+    createCount++;
+    copy(inputPath, outputPath);
+  }
+});
+```
+
+The available delegate functions are the same as the supported operations:
+`unlink`, `rmdir`, `mkdir`, `create`, and `change`. Each delegate function
+receives the reference `inputPath`, the `outputPath`, and `relativePath` of the file
+or directory for which to apply the operation.

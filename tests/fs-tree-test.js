@@ -1,6 +1,9 @@
 'use strict';
 
+var fs = require('fs-extra');
+var path = require('path');
 var expect = require('chai').expect;
+var walkSync = require('walk-sync');
 var FSTree = require('../lib/index');
 var Entry = require('../lib/entry');
 var context = describe;
@@ -845,6 +848,113 @@ describe('FSTree', function() {
           ['create', 'parent/subdir2/a.js', file('parent/subdir2/a.js')],
         ]);
       });
+    });
+  });
+
+  describe('.applyPatch', function() {
+    var inputDir = 'tmp/fixture/input';
+    var outputDir = 'tmp/fixture/output';
+
+    beforeEach(function() {
+      fs.mkdirpSync(inputDir);
+      fs.mkdirpSync(outputDir);
+    });
+
+    afterEach(function() {
+      fs.removeSync('tmp');
+    });
+
+    it('applies all types of operations', function() {
+      var firstTree = FSTree.fromEntries(walkSync.entries(inputDir));
+
+      var fooIndex = path.join(inputDir, 'foo/index.js');
+      var barIndex = path.join(inputDir, 'bar/index.js');
+      var barOutput = path.join(outputDir, 'bar/index.js')
+
+      fs.outputFileSync(fooIndex, 'foo'); // mkdir + create
+      fs.outputFileSync(barIndex, 'bar'); // mkdir + create
+
+      var secondTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      var patch = firstTree.calculatePatch(secondTree);
+
+      FSTree.applyPatch(inputDir, outputDir, patch);
+      expect(walkSync(outputDir)).to.deep.equal([
+        'bar/',
+        'bar/index.js',
+        'foo/',
+        'foo/index.js'
+      ]);
+      expect(fs.readFileSync(barOutput, 'utf-8')).to.equal('bar');
+
+      fs.removeSync(path.dirname(fooIndex)); // unlink + rmdir
+      fs.outputFileSync(barIndex, 'boo'); // change
+
+      var thirdTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      patch = secondTree.calculatePatch(thirdTree);
+
+      FSTree.applyPatch(inputDir, outputDir, patch);
+      expect(walkSync(outputDir)).to.deep.equal([
+        'bar/',
+        'bar/index.js'
+      ]);
+      expect(fs.readFileSync(barOutput, 'utf-8')).to.equal('boo');
+    });
+
+    it('supports custom delegate methods', function() {
+      var inputDir = 'tmp/fixture/input';
+      var outputDir = 'tmp/fixture/output';
+
+      var stats = {
+        unlink: 0,
+        rmdir: 0,
+        mkdir: 0,
+        change: 0,
+        create: 0
+      };
+      var delegate = {
+        unlink: function() {
+          stats.unlink++;
+        },
+        rmdir: function() {
+          stats.rmdir++;
+        },
+        mkdir: function() {
+          stats.mkdir++;
+        },
+        change: function() {
+          stats.change++;
+        },
+        create: function() {
+          stats.create++;
+        }
+      };
+
+      var patch = [
+        [ 'mkdir', 'bar/' ],
+        [ 'create', 'bar/index.js' ],
+        [ 'mkdir', 'foo/' ],
+        [ 'create', 'foo/index.js' ],
+        [ 'unlink', 'foo/index.js' ],
+        [ 'rmdir', 'foo/' ],
+        [ 'change', 'bar/index.js' ]
+      ];
+
+      FSTree.applyPatch(inputDir, outputDir, patch, delegate);
+
+      expect(stats).to.deep.equal({
+        unlink: 1,
+        rmdir: 1,
+        mkdir: 2,
+        change: 1,
+        create: 2
+      });
+    });
+
+    it('throws an error when a patch has an unknown operation type', function() {
+      var patch = [ [ 'delete', '/foo.js' ] ];
+      expect(function() {
+        FSTree.applyPatch('/fixture/input', '/fixture/output', patch)
+      }).to.throw('Unable to apply patch operation: delete. The value of delegate.delete is of type undefined, and not a function. Check the `delegate` argument to `FSTree.prototype.applyPatch`.');
     });
   });
 });
