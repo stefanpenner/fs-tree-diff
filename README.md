@@ -121,6 +121,8 @@ The public API is:
   provide a delegate object to handle individual types of patch operations.
 - `FSTree.prototype.calculatePatch(newTree, isEqual)` calculate a patch against
   `newTree`.  Optionally specify a custom `isEqual` (see Change Calculation).
+- `FSTree.prototype.calculateAndApplyPatch(newTree, inputDir, outputDir, delegate)`
+  does a `calculatePatch` followed by `applyPatch`.
 - `FSTree.prototype.addEntries(entries, options)` adds entries to an
   existing tree. Options are the same as for `FSTree.fromEntries`.
   Entries added with the same path will overwrite any existing entries.
@@ -239,8 +241,17 @@ FSTree.applyPatch(inputDir, outputDir, patch);
 ```
 
 It will apply the patch changes to `dist` while using `src` as a reference for
-non-destructive operations (`mkdir`, `create`, `change`). You can optionally
-provide a delegate object to handle applying specific types of operations:
+non-destructive operations (`mkdir`, `create`, `change`). If you want to calculate
+and apply a patch without any intermediate operations, you can do:
+
+```js
+var inputDir = 'src';
+var outputDir = 'dist';
+var patch = oldInputTree.calculateAndApplyPatch(newInputTree, inputDir, outputDir);
+```
+
+You can optionally provide a delegate object to handle applying specific types
+of operations:
 
 ```js
 var createCount = 0;

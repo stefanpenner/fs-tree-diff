@@ -957,4 +957,70 @@ describe('FSTree', function() {
       }).to.throw('Unable to apply patch operation: delete. The value of delegate.delete is of type undefined, and not a function. Check the `delegate` argument to `FSTree.prototype.applyPatch`.');
     });
   });
+
+  describe('.calculateAndApplyPatch', function() {
+    var inputDir = 'tmp/fixture/input';
+    var outputDir = 'tmp/fixture/output';
+
+    beforeEach(function() {
+      fs.mkdirpSync(inputDir);
+      fs.mkdirpSync(outputDir);
+    });
+
+    afterEach(function() {
+      fs.removeSync('tmp');
+    });
+
+    it('calculates and applies a patch properly', function() {
+      var firstTree = FSTree.fromEntries(walkSync.entries(inputDir));
+
+      var fooIndex = path.join(inputDir, 'foo/index.js');
+      var barIndex = path.join(inputDir, 'bar/index.js');
+      var barOutput = path.join(outputDir, 'bar/index.js')
+
+      fs.outputFileSync(fooIndex, 'foo');
+      fs.outputFileSync(barIndex, 'bar');
+
+      var secondTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      firstTree.calculateAndApplyPatch(secondTree, inputDir, outputDir);
+
+      expect(walkSync(outputDir)).to.deep.equal([
+        'bar/',
+        'bar/index.js',
+        'foo/',
+        'foo/index.js'
+      ]);
+    });
+
+    it('calculates and applies a patch properly with custom delegates', function() {
+      var stats = {
+        mkdir: 0,
+        create: 0
+      };
+      var delegate = {
+        mkdir: function() {
+          stats.mkdir++;
+        },
+        create: function() {
+          stats.create++;
+        }
+      };
+
+      var firstTree = FSTree.fromEntries(walkSync.entries(inputDir));
+
+      var fooIndex = path.join(inputDir, 'foo/index.js');
+      var barIndex = path.join(inputDir, 'bar/index.js');
+
+      fs.outputFileSync(fooIndex, 'foo');
+      fs.outputFileSync(barIndex, 'bar');
+
+      var secondTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      firstTree.calculateAndApplyPatch(secondTree, inputDir, outputDir, delegate);
+
+      expect(stats).to.deep.equal({
+        mkdir: 2,
+        create: 2
+      });
+    });
+  });
 });
