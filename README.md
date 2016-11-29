@@ -67,7 +67,7 @@ current.calculatePatch(next) === [
 ]
 ```
 
-Now, the above examples do not demonstrate `update` operations. This is because
+Now, the above examples do not demonstrate `change` operations. This is because
 when providing only paths, we do not have sufficient information to check if
 one entry is merely different from another with the same relativePath.
 
@@ -94,7 +94,7 @@ var next = new FSTree({
 });
 
 current.calculatePatch(next) === [
-  ['update', 'foo.js', entryFoo], // mtime + size changed, so this input is stale and needs updating.
+  ['change', 'foo.js', entryFoo], // mtime + size changed, so this input is stale and needs updating.
   ['create', 'baz.js', entryBaz]  // new file, so we should create it
   /* bar stays the same and is left inert*/
 ];
@@ -133,6 +133,11 @@ The public API is:
 - `Entry.fromStat(relativePath, stat)` creates an `Entry` from a given path and
   [`fs.Stats`](https://nodejs.org/api/fs.html#fs_class_fs_stats) object. It can
   then be used with `fromEntries` or `addEntries`.
+
+
+The trees returned from `fromPaths` and `fromEntries` are relative to some base
+directory.  `calculatePatch`, `applyPatch` and `calculateAndApplyPatch` all
+assume that the base directory has not changed.
 
 ## Input
 
@@ -247,7 +252,7 @@ and apply a patch without any intermediate operations, you can do:
 ```js
 var inputDir = 'src';
 var outputDir = 'dist';
-var patch = oldInputTree.calculateAndApplyPatch(newInputTree, inputDir, outputDir);
+oldInputTree.calculateAndApplyPatch(newInputTree, inputDir, outputDir);
 ```
 
 You can optionally provide a delegate object to handle applying specific types
@@ -267,3 +272,4 @@ The available delegate functions are the same as the supported operations:
 `unlink`, `rmdir`, `mkdir`, `create`, and `change`. Each delegate function
 receives the reference `inputPath`, the `outputPath`, and `relativePath` of the file
 or directory for which to apply the operation.
+
