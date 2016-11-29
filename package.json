@@ -19,7 +19,7 @@
     "heimdalljs-logger": "^0.1.7",
     "object-assign": "^4.1.0",
     "path-posix": "^1.0.0",
-    "symlink-or-copy": "^1.1.6"
+    "symlink-or-copy": "^1.1.8"
   },
   "devDependencies": {
     "chai": "^3.3.0",

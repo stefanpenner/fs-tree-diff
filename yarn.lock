@@ -10,10 +10,6 @@ balanced-match@^0.4.1:
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-0.4.2.tgz#cb3f3e3c732dc0f01ee70b403f302e61d7709838"
 
-blank-object@^1.0.1:
-  version "1.0.2"
-  resolved "https://registry.npmjs.org/blank-object/-/blank-object-1.0.2.tgz#f990793fbe9a8c8dd013fb3219420bec81d5f4b9"
-
 brace-expansion@^1.0.0:
   version "1.1.6"
   resolved "https://registry.yarnpkg.com/brace-expansion/-/brace-expansion-1.1.6.tgz#7197d7eaa9b87e648390ea61fc66c84427420df9"
@@ -70,12 +66,6 @@ ensure-posix-path@^1.0.0:
 escape-string-regexp@1.0.2:
   version "1.0.2"
   resolved "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.2.tgz#4dbc2fe674e71949caf3fb2695ce7f2dc1d9a8d1"
-
-fast-ordered-set@^1.0.2:
-  version "1.0.3"
-  resolved "https://registry.npmjs.org/fast-ordered-set/-/fast-ordered-set-1.0.3.tgz#3fbb36634f7be79e4f7edbdb4a357dee25d184eb"
-  dependencies:
-    blank-object "^1.0.1"
 
 fs-extra@^1.0.0:
   version "1.0.0"
@@ -216,9 +206,9 @@ supports-color@1.2.0:
   version "1.2.0"
   resolved "https://registry.npmjs.org/supports-color/-/supports-color-1.2.0.tgz#ff1ed1e61169d06b3cf2d588e188b18d8847e17e"
 
-symlink-or-copy@^1.1.6:
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/symlink-or-copy/-/symlink-or-copy-1.1.6.tgz#b5f6e8e00616210f64e6b3fa114ea0208e268f78"
+symlink-or-copy@^1.1.8:
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/symlink-or-copy/-/symlink-or-copy-1.1.8.tgz#cabe61e0010c1c023c173b25ee5108b37f4b4aa3"
 
 to-iso-string@0.0.2:
   version "0.0.2"
