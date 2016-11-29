@@ -1,5 +1,14 @@
 # master
 
+# v0.5.5
+
+* add `Entry.fromStat` thanks @trentmwillis
+* add `applyPatch` and `calculateAndApplyPatch` thanks @trentmwillis
+
+# v0.5.4
+
+* Fix remove-before-add bug.  Thanks @dfreeman for excellent bug investigation
+
 # v0.5.3
 
 * Add `FSTree.prototype.addEntries` thanks @chriseppstein
