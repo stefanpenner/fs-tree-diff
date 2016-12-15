@@ -588,7 +588,6 @@ describe('FSTree', function() {
       });
     });
 
-
     context('from a non-empty tree', function() {
       beforeEach( function() {
         fsTree = FSTree.fromPaths([
@@ -607,25 +606,25 @@ describe('FSTree', function() {
             'bar/',
             'bar/two.js'
           ]))).to.deep.equal([
-            ['unlink', 'bar/one.js', file('bar/one.js')],
             ['unlink', 'foo/two.js', file('foo/two.js')],
             ['unlink', 'foo/one.js', file('foo/one.js')],
             ['rmdir',  'foo/',       directory('foo/')],
+            ['unlink', 'bar/one.js', file('bar/one.js')],
           ]);
         });
       });
 
       context('with removals and additions', function() {
-        it('reduces the rm operations', function() {
+        it('works', function() {
           expect(fsTree.calculatePatch(FSTree.fromPaths([
             'bar/',
             'bar/three.js'
           ]))).to.deep.equal([
-            ['unlink', 'bar/one.js',    file('bar/one.js')],
             ['unlink', 'foo/two.js',    file('foo/two.js')],
             ['unlink', 'foo/one.js',    file('foo/one.js')],
             ['rmdir',  'foo/',          directory('foo/')],
             ['unlink', 'bar/two.js',    file('bar/two.js')],
+            ['unlink', 'bar/one.js',    file('bar/one.js')],
             ['create', 'bar/three.js',  file('bar/three.js')],
           ]);
         });
