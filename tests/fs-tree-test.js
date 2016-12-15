@@ -607,10 +607,10 @@ describe('FSTree', function() {
             'bar/',
             'bar/two.js'
           ]))).to.deep.equal([
+            ['unlink', 'bar/one.js', file('bar/one.js')],
             ['unlink', 'foo/two.js', file('foo/two.js')],
             ['unlink', 'foo/one.js', file('foo/one.js')],
             ['rmdir',  'foo/',       directory('foo/')],
-            ['unlink', 'bar/one.js', file('bar/one.js')],
           ]);
         });
       });
@@ -621,11 +621,11 @@ describe('FSTree', function() {
             'bar/',
             'bar/three.js'
           ]))).to.deep.equal([
+            ['unlink', 'bar/one.js',    file('bar/one.js')],
             ['unlink', 'foo/two.js',    file('foo/two.js')],
             ['unlink', 'foo/one.js',    file('foo/one.js')],
             ['rmdir',  'foo/',          directory('foo/')],
             ['unlink', 'bar/two.js',    file('bar/two.js')],
-            ['unlink', 'bar/one.js',    file('bar/one.js')],
             ['create', 'bar/three.js',  file('bar/three.js')],
           ]);
         });
@@ -830,6 +830,21 @@ describe('FSTree', function() {
         ]);
       });
 
+      it('always remove files first if dir also needs to be removed', function() {
+        var newTree = new FSTree({
+          entries: [
+            entry(directory('parent/'))
+          ]
+        });
+
+        var result = fsTree.calculatePatch(newTree);
+
+        expect(result).to.deep.equal([
+          ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
+          ['rmdir', 'parent/subdir/',       directory('parent/subdir/')]
+        ]);
+      });
+
       it('renaming a subdir does not recreate parent', function () {
         var newTree = new FSTree({
           entries: [
@@ -842,8 +857,8 @@ describe('FSTree', function() {
         var result = fsTree.calculatePatch(newTree);
 
         expect(result).to.deep.equal([
-          ['rmdir', 'parent/subdir/',       directory('parent/subdir/')],
           ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
+          ['rmdir', 'parent/subdir/',       directory('parent/subdir/')],
           ['mkdir', 'parent/subdir2/',      directory('parent/subdir2/')],
           ['create', 'parent/subdir2/a.js', file('parent/subdir2/a.js')],
         ]);
