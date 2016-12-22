@@ -10,12 +10,43 @@ balanced-match@^0.4.1:
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-0.4.2.tgz#cb3f3e3c732dc0f01ee70b403f302e61d7709838"
 
+blank-object@^1.0.1:
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/blank-object/-/blank-object-1.0.2.tgz#f990793fbe9a8c8dd013fb3219420bec81d5f4b9"
+
 brace-expansion@^1.0.0:
   version "1.1.6"
   resolved "https://registry.yarnpkg.com/brace-expansion/-/brace-expansion-1.1.6.tgz#7197d7eaa9b87e648390ea61fc66c84427420df9"
   dependencies:
     balanced-match "^0.4.1"
     concat-map "0.0.1"
+
+broccoli-builder@^0.18.0:
+  version "0.18.3"
+  resolved "https://registry.npmjs.org/broccoli-builder/-/broccoli-builder-0.18.3.tgz#9d2c90558e7f4d1118ae6e938c63b35da00dd38f"
+  dependencies:
+    heimdalljs "^0.2.0"
+    promise-map-series "^0.2.1"
+    quick-temp "^0.1.2"
+    rimraf "^2.2.8"
+    rsvp "^3.0.17"
+    silent-error "^1.0.1"
+
+broccoli-fixturify@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.npmjs.org/broccoli-fixturify/-/broccoli-fixturify-0.3.0.tgz#e96cb5b8407b43e850a46bb09fb81c6f44b7288a"
+  dependencies:
+    broccoli-plugin "^1.2.0"
+    fixturify "~0.3.0"
+
+broccoli-plugin@^1.2.0, broccoli-plugin@^1.2.2:
+  version "1.3.0"
+  resolved "https://registry.npmjs.org/broccoli-plugin/-/broccoli-plugin-1.3.0.tgz#bee704a8e42da08cb58e513aaa436efb7f0ef1ee"
+  dependencies:
+    promise-map-series "^0.2.1"
+    quick-temp "^0.1.3"
+    rimraf "^2.3.4"
+    symlink-or-copy "^1.1.8"
 
 chai@^3.3.0:
   version "3.5.0"
@@ -67,6 +98,28 @@ escape-string-regexp@1.0.2:
   version "1.0.2"
   resolved "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.2.tgz#4dbc2fe674e71949caf3fb2695ce7f2dc1d9a8d1"
 
+fast-ordered-set@^1.0.2:
+  version "1.0.3"
+  resolved "https://registry.npmjs.org/fast-ordered-set/-/fast-ordered-set-1.0.3.tgz#3fbb36634f7be79e4f7edbdb4a357dee25d184eb"
+  dependencies:
+    blank-object "^1.0.1"
+
+fixturify@~0.3.0:
+  version "0.3.2"
+  resolved "https://registry.npmjs.org/fixturify/-/fixturify-0.3.2.tgz#5dc6bb921105069f1ae682d50f09dcf653c8a6f5"
+  dependencies:
+    fs-extra "^0.30.0"
+
+fs-extra@^0.30.0:
+  version "0.30.0"
+  resolved "https://registry.npmjs.org/fs-extra/-/fs-extra-0.30.0.tgz#f233ffcc08d4da7d432daa449776989db1df93f0"
+  dependencies:
+    graceful-fs "^4.1.2"
+    jsonfile "^2.1.0"
+    klaw "^1.0.0"
+    path-is-absolute "^1.0.0"
+    rimraf "^2.2.8"
+
 fs-extra@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/fs-extra/-/fs-extra-1.0.0.tgz#cd3ce5f7e7cb6145883fcae3191e9877f8587950"
@@ -75,12 +128,27 @@ fs-extra@^1.0.0:
     jsonfile "^2.1.0"
     klaw "^1.0.0"
 
+fs.realpath@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.npmjs.org/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"
+
 glob@3.2.11:
   version "3.2.11"
   resolved "https://registry.npmjs.org/glob/-/glob-3.2.11.tgz#4a973f635b9190f715d10987d5c00fd2815ebe3d"
   dependencies:
     inherits "2"
     minimatch "0.3"
+
+glob@^7.0.5:
+  version "7.1.1"
+  resolved "https://registry.npmjs.org/glob/-/glob-7.1.1.tgz#805211df04faaf1c63a3600306cdf5ade50b2ec8"
+  dependencies:
+    fs.realpath "^1.0.0"
+    inflight "^1.0.4"
+    inherits "2"
+    minimatch "^3.0.2"
+    once "^1.3.0"
+    path-is-absolute "^1.0.0"
 
 graceful-fs@^4.1.2, graceful-fs@^4.1.6, graceful-fs@^4.1.9:
   version "4.1.10"
@@ -102,6 +170,13 @@ heimdalljs@^0.2.0:
   resolved "https://registry.npmjs.org/heimdalljs/-/heimdalljs-0.2.3.tgz#35b82a6a4d73541fc4fb88d2fe2b23608fb4f779"
   dependencies:
     rsvp "~3.2.1"
+
+inflight@^1.0.4:
+  version "1.0.6"
+  resolved "https://registry.npmjs.org/inflight/-/inflight-1.0.6.tgz#49bd6331d7d02d0c09bc910a1075ba8165b56df9"
+  dependencies:
+    once "^1.3.0"
+    wrappy "1"
 
 inherits@2:
   version "2.0.3"
@@ -126,15 +201,27 @@ klaw@^1.0.0:
   optionalDependencies:
     graceful-fs "^4.1.9"
 
+lodash.merge@^4.6.0:
+  version "4.6.0"
+  resolved "https://registry.npmjs.org/lodash.merge/-/lodash.merge-4.6.0.tgz#69884ba144ac33fe699737a6086deffadd0f89c5"
+
 lru-cache@2:
   version "2.7.3"
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-2.7.3.tgz#6d4524e8b955f95d4f5b58851ce21dd72fb4e952"
 
-matcher-collection@^1.0.0:
+matcher-collection@^1.0.0, matcher-collection@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/matcher-collection/-/matcher-collection-1.0.4.tgz#2f66ae0869996f29e43d0b62c83dd1d43e581755"
   dependencies:
     minimatch "^3.0.2"
+
+md5hex@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.npmjs.org/md5hex/-/md5hex-1.0.0.tgz#ed74b477a2ee9369f75efee2f08d5915e52a42e8"
+
+md5sum@^0.9.0:
+  version "0.9.0"
+  resolved "https://registry.npmjs.org/md5sum/-/md5sum-0.9.0.tgz#09f2a1a4ed520aafff2e043f78b0f7012904daf9"
 
 minimatch@0.3:
   version "0.3.0"
@@ -163,6 +250,10 @@ mkdirp@0.5.1:
   dependencies:
     minimist "0.0.8"
 
+mktemp@~0.4.0:
+  version "0.4.0"
+  resolved "https://registry.npmjs.org/mktemp/-/mktemp-0.4.0.tgz#6d0515611c8a8c84e484aa2000129b98e981ff0b"
+
 mocha@^2.3.3:
   version "2.5.3"
   resolved "https://registry.npmjs.org/mocha/-/mocha-2.5.3.tgz#161be5bdeb496771eb9b35745050b622b5aefc58"
@@ -190,17 +281,57 @@ object-assign@^4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/object-assign/-/object-assign-4.1.0.tgz#7a3b3d0e98063d43f4c03f2e8ae6cd51a86883a0"
 
+once@^1.3.0:
+  version "1.4.0"
+  resolved "https://registry.npmjs.org/once/-/once-1.4.0.tgz#583b1aa775961d4b113ac17d9c50baef9dd76bd1"
+  dependencies:
+    wrappy "1"
+
+path-is-absolute@^1.0.0:
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/path-is-absolute/-/path-is-absolute-1.0.1.tgz#174b9268735534ffbc7ace6bf53a5a9e1b5c5f5f"
+
 path-posix@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/path-posix/-/path-posix-1.0.0.tgz#06b26113f56beab042545a23bfa88003ccac260f"
 
-rsvp@~3.2.1:
+promise-map-series@^0.2.1, promise-map-series@^0.2.3:
+  version "0.2.3"
+  resolved "https://registry.npmjs.org/promise-map-series/-/promise-map-series-0.2.3.tgz#c2d377afc93253f6bd03dbb77755eb88ab20a847"
+  dependencies:
+    rsvp "^3.0.14"
+
+quick-temp@^0.1.2, quick-temp@^0.1.3:
+  version "0.1.6"
+  resolved "https://registry.npmjs.org/quick-temp/-/quick-temp-0.1.6.tgz#a6242a15cba9f9cdbd341287b5c569e318eec307"
+  dependencies:
+    mktemp "~0.4.0"
+    rimraf "~2.2.6"
+    underscore.string "~2.3.3"
+
+rimraf@^2.2.8, rimraf@^2.3.4:
+  version "2.5.4"
+  resolved "https://registry.npmjs.org/rimraf/-/rimraf-2.5.4.tgz#96800093cbf1a0c86bd95b4625467535c29dfa04"
+  dependencies:
+    glob "^7.0.5"
+
+rimraf@~2.2.6:
+  version "2.2.8"
+  resolved "https://registry.npmjs.org/rimraf/-/rimraf-2.2.8.tgz#e439be2aaee327321952730f99a8929e4fc50582"
+
+rsvp@^3.0.14, rsvp@^3.0.17, rsvp@^3.2.1, rsvp@~3.2.1:
   version "3.2.1"
   resolved "https://registry.npmjs.org/rsvp/-/rsvp-3.2.1.tgz#07cb4a5df25add9e826ebc67dcc9fd89db27d84a"
 
 sigmund@~1.0.0:
   version "1.0.1"
   resolved "https://registry.npmjs.org/sigmund/-/sigmund-1.0.1.tgz#3ff21f198cad2175f9f3b781853fd94d0d19b590"
+
+silent-error@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/silent-error/-/silent-error-1.0.1.tgz#71b7d503d1c6f94882b51b56be879b113cb4822c"
+  dependencies:
+    debug "^2.2.0"
 
 supports-color@1.2.0:
   version "1.2.0"
@@ -222,9 +353,17 @@ type-detect@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/type-detect/-/type-detect-1.0.0.tgz#762217cc06db258ec48908a1298e8b95121e8ea2"
 
+underscore.string@~2.3.3:
+  version "2.3.3"
+  resolved "https://registry.npmjs.org/underscore.string/-/underscore.string-2.3.3.tgz#71c08bf6b428b1133f37e78fa3a21c82f7329b0d"
+
 walk-sync@^0.3.1:
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/walk-sync/-/walk-sync-0.3.1.tgz#558a16aeac8c0db59c028b73c66f397684ece465"
   dependencies:
     ensure-posix-path "^1.0.0"
     matcher-collection "^1.0.0"
+
+wrappy@1:
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/wrappy/-/wrappy-1.0.2.tgz#b5243d8f3ec1aa35f1364605bc0d1036e30ab69f"
