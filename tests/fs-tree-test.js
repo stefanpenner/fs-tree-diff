@@ -10,7 +10,6 @@ var context = describe;
 var defaultIsEqual = FSTree.defaultIsEqual;
 var fsTree;
 var walkSync = require('walk-sync');
-var fs = require('fs');
 var md5hex = require('md5hex');
 
 require('chai').config.truncateThreshold = 0;
