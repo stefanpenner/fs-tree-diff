@@ -342,7 +342,6 @@ describe('BroccoliPlugins', function() {
        expect(changes).to.have.deep.property('0.1', 'a.txt');
 
        fixturify.writeSync(INPUT_PATH, { 'a.txt': null });
-       debugger;
        return builder.build();
     }).then(function(result) {
       // expect(fs.readdirSync(result.directory)).to.eql(['out.txt']);

@@ -11,6 +11,7 @@ var defaultIsEqual = FSTree.defaultIsEqual;
 var fsTree;
 var walkSync = require('walk-sync');
 var md5hex = require('md5hex');
+var fixturify = require('fixturify');
 
 require('chai').config.truncateThreshold = 0;
 
@@ -1040,14 +1041,45 @@ it('detects file updates', function() {
     });
   });
 
-  describe('fs', function() {
+  describe.only('fs', function() {
     var tree;
+    var ROOT = path.resolve('tmp/fs-test-root/');
 
     beforeEach(function() {
+      fs.mkdirpSync(ROOT);
+
+      fixturify.writeSync(ROOT, {
+        'hello.txt': "Hello, World!\n",
+        'my-directory': {},
+      });
       tree = new FSTree({
         entries: walkSync.entries(__dirname + '/fixtures'),
-        root: __dirname + '/fixtures/'
+        root: ROOT
       });
+    });
+
+    afterEach(function() {
+      fs.removeSync(ROOT);
+    });
+
+    // TODO: doubts; we added this b/c of failures from `this.root + 'wat'`
+    // but the error is really in that path construction
+    it('ensures trailing slash for root', function() {
+      expect(function() {
+        new FSTree({ root: null })
+      }).to.throw(`Root must be an absolute path, tree.root: 'null'`);
+
+      expect(function() {
+        new FSTree({ root: '' })
+      }).to.throw(`Root must be an absolute path, tree.root: ''`);
+
+      expect(function() {
+        new FSTree({ root: 'foo' })
+      }).to.throw(`Root must be an absolute path, tree.root: 'foo'`);
+
+      expect(new FSTree({ root: '/foo' }).root).to.eql('/foo/');
+      expect(new FSTree({ root: '/foo/' }).root).to.eql('/foo/');
+      expect(new FSTree({ root: '/foo//' }).root).to.eql('/foo/');
     });
 
     /*
@@ -1085,7 +1117,7 @@ it('detects file updates', function() {
       });
 
       it('throws for missing file', function() {
-        // TODO: make sure as close as possible to real ENOENT error
+    // TODO: make sure as close as possible to real ENOENT error
         expect(function() {
           tree.readFileSync('missing.txt', 'UTF8');
         }, /ENOENT.*missing\.txt/);
@@ -1109,7 +1141,7 @@ it('detects file updates', function() {
           expect(function() {
             tree.writeFileSync('hello.txt', 'OMG');
             expect(fs.readFileSync(tree.root + 'hello.txt', 'UTF8')).to.eql('Hello, World!\n');
-            // did not write to file
+    // did not write to file
           }).to.throw(/NOPE/);
         });
       });
@@ -1240,6 +1272,52 @@ it('detects file updates', function() {
     });
 
     describe('.mkdirSync', function() {
+      it('-> directory (create)', function() {
+        expect(tree.changes()).to.eql([]);
+
+        expect(tree.mkdirSync('new-directory')).to.eql(undefined);
+
+        let [[operation, relativePath, entry]] = tree.changes();
+
+        expect(operation).to.eql('mkdir');
+        expect(relativePath).to.eql('new-directory/');
+        expect(entry).to.have.property('relativePath', 'new-directory/');
+        expect(entry).to.have.property('checksum', null);
+        expect(entry).to.have.property('mode', 0);
+        expect(entry).to.have.property('mtime');
+        expect(tree.changes()).to.have.property('length', 1);
+
+        expect(tree.statSync('new-directory')).to.eql(entry);
+      });
+
+      it('directory/ -> directory/ (idempotence)', function testDir2Dir() {
+        var old = fs.statSync(`${tree.root}/my-directory`);
+
+        tree.mkdirSync('my-directory/');
+
+        var current = fs.statSync(`${tree.root}/my-directory`);
+
+        expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
+        expect(old).to.have.property('mode', current.mode);
+        expect(old).to.have.property('size', current.size);
+        expect(tree.changes()).to.eql([]);
+      });
+
+			it('directory/ -> directory (idempotence, path normalization)', function () {
+        var old = fs.statSync(`${tree.root}/my-directory`);
+
+        tree.mkdirSync('my-directory');
+
+        var current = fs.statSync(`${tree.root}/my-directory`);
+
+        expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
+        expect(old).to.have.property('mode', current.mode);
+        expect(old).to.have.property('size', current.size);
+        expect(tree.changes()).to.eql([]);
+			});
+
+      // describe('file -> directory (TDB)');
+
       describe('start/stop', function() {
         it('does error when stopped', function() {
           tree.stop();
@@ -1247,7 +1325,7 @@ it('detects file updates', function() {
             tree.mkdirSync('hello.txt');
           }).to.throw(/NOPE/);
           expect(function() {
-            tree.mkdirSync('hello.txt');freeze
+            tree.mkdirSync('hello.txt');
           }).to.throw(/mkdir/);
         });
       });

@@ -104,7 +104,7 @@ fast-ordered-set@^1.0.2:
   dependencies:
     blank-object "^1.0.1"
 
-fixturify@~0.3.0:
+fixturify@^0.3.2, fixturify@~0.3.0:
   version "0.3.2"
   resolved "https://registry.npmjs.org/fixturify/-/fixturify-0.3.2.tgz#5dc6bb921105069f1ae682d50f09dcf653c8a6f5"
   dependencies:
