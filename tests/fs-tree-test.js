@@ -134,7 +134,7 @@ describe('FSTree', function() {
 
     describe('options', function() {
       describe('sortAndExpand', function() {
-        it.only('sorts input entries', function() {
+        it('sorts input entries', function() {
           fsTree = FSTree.fromPaths([
             'foo/',
             'foo/a.js',
