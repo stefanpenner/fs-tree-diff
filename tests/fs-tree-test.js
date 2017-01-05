@@ -92,7 +92,7 @@ describe('FSTree', function() {
     };
   }
 
-  let originalNow = Date.now;
+  const originalNow = Date.now;
 
   beforeEach(function() {
     Date.now = (() => 0);
@@ -134,7 +134,7 @@ describe('FSTree', function() {
 
     describe('options', function() {
       describe('sortAndExpand', function() {
-        it('sorts input entries', function() {
+        it.only('sorts input entries', function() {
           fsTree = FSTree.fromPaths([
             'foo/',
             'foo/a.js',
