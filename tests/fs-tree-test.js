@@ -30,19 +30,15 @@ describe('FSTree', function() {
     return result;
   }
 
-  function MockEntry(options) {
-    this.relativePath = options.relativePath;
-    this.mode = options.mode;
-    this.size = options.size;
-    this.mtime = options.mtime;
-    this.checksum = options.checksum;
+  function MockEntry({ relativePath, mode, size, mtime, checksum, meta }) {
+    Entry.call(this, relativePath, size, mtime, mode, checksum);
 
-    if (options.meta) {
-      this.meta = options.meta;
+    if (meta) {
+      this.meta = meta;
     }
   }
 
-  MockEntry.prototype.isDirectory = Entry.prototype.isDirectory;
+  MockEntry.prototype = Entry.prototype;
 
   function metaIsEqual(a, b) {
     var aMeta = a.meta;
@@ -96,6 +92,16 @@ describe('FSTree', function() {
     };
   }
 
+  let originalNow = Date.now;
+
+  beforeEach(function() {
+    Date.now = (() => 0);
+  });
+
+  afterEach(function() {
+    Date.now = originalNow;
+  });
+
   it('can be instantiated', function() {
     expect(new FSTree()).to.be.an.instanceOf(FSTree);
   });
@@ -137,8 +143,10 @@ describe('FSTree', function() {
           ], { sortAndExpand: true });
 
           expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
-            'bar/',
-            'bar/b.js', 'foo/', 'foo/a.js',
+            'bar',
+            'bar/b.js',
+            'foo',
+            'foo/a.js',
           ]);
         });
 
@@ -293,7 +301,7 @@ describe('FSTree', function() {
         expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
           'a.js',
           'b.js',
-          'foo/',
+          'foo',
           'foo/a.js',
         ]);
       });
@@ -316,11 +324,11 @@ describe('FSTree', function() {
         expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
           '1.js',
           'a.js',
-          'bar/',
+          'bar',
           'bar/b.js',
-          'foo/',
+          'foo',
           'foo/a.js',
-          'foo/bip/',
+          'foo/bip',
           'foo/bip/img.jpg',
         ]);
       });
@@ -340,7 +348,7 @@ describe('FSTree', function() {
 
         expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
           'a.js',
-          'foo/',
+          'foo',
           'foo/a.js',
         ]);
         expect(fsTree.entries[2].mtime).to.equal(10);
@@ -366,11 +374,11 @@ describe('FSTree', function() {
         expect(fsTree.entries.map(by('relativePath'))).to.deep.equal([
           '1.js',
           'a.js',
-          'bar/',
+          'bar',
           'bar/b.js',
-          'foo/',
+          'foo',
           'foo/a.js',
-          'foo/bip/',
+          'foo/bip',
           'foo/bip/img.jpg',
         ]);
       });
@@ -378,7 +386,7 @@ describe('FSTree', function() {
   });
 
   describe('#calculatePatch', function() {
-    context('input validation', function() {
+    it('input validation', function() {
       expect(function() {
         FSTree.fromPaths([]).calculatePatch(FSTree.fromPaths([]), '');
       }).to.throw(TypeError, 'calculatePatch\'s second argument must be a function');
@@ -402,7 +410,7 @@ describe('FSTree', function() {
             'bar/baz.js',
             'foo.js',
           ]))).to.deep.equal([
-            ['mkdir',  'bar/',       directory('bar/')],
+            ['mkdir',  'bar',        directory('bar/')],
             ['create', 'bar/baz.js', file('bar/baz.js')],
             ['create', 'foo.js',     file('foo.js')],
           ]);
@@ -424,7 +432,7 @@ describe('FSTree', function() {
           expect(fsTree.calculatePatch(FSTree.fromPaths([]))).to.deep.equal([
             ['unlink', 'foo.js',     file('foo.js')],
             ['unlink', 'bar/baz.js', file('bar/baz.js')],
-            ['rmdir',  'bar/',       directory('bar/')],
+            ['rmdir',  'bar',        directory('bar/')],
           ]);
         });
       });
@@ -436,10 +444,10 @@ describe('FSTree', function() {
           fsTree = new FSTree({
             entries: [
               directory('a/'),
-              file('a/b.js', { mode: '0o666', size: 1, mtime: 1 }),
-              file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
+              file('a/b.js', { mode: 0o666, size: 1, mtime: 1 }),
+              file('a/c.js', { mode: 0o666, size: 1, mtime: 1 }),
               directory('c/'),
-              file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } })
+              file('c/d.js', { mode: 0o666, size: 1, mtime: 1, meta: { rev: 0 } })
             ]
           });
         });
@@ -448,16 +456,16 @@ describe('FSTree', function() {
           var result = fsTree.calculatePatch(new FSTree({
             entries: [
               directory('a/'),
-              file('a/b.js', { mode: '0o666', size: 1, mtime: 1 }),
-              file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
-              file('a/j.js', { mode: '0o666', size: 1, mtime: 1 }),
+              file('a/b.js', { mode: 0o666, size: 1, mtime: 1 }),
+              file('a/c.js', { mode: 0o666, size: 1, mtime: 1 }),
+              file('a/j.js', { mode: 0o666, size: 1, mtime: 1 }),
               directory('c/'),
-              file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } }),
+              file('c/d.js', { mode: 0o666, size: 1, mtime: 1, meta: { rev: 0 } }),
             ]
           }));
 
           expect(result).to.deep.equal([
-            ['create', 'a/j.js', file('a/j.js', { mode: '0o666', size: 1, mtime: 1 })]
+            ['create', 'a/j.js', file('a/j.js', { mode: 0o666, size: 1, mtime: 1 })]
           ]);
         });
 
@@ -465,44 +473,24 @@ describe('FSTree', function() {
           var result = fsTree.calculatePatch(new FSTree({
             entries: [
               directory('a/'),
-              entry({ relativePath: 'a/b.js', mode: '0o666', size: 1, mtime: 1 })
+              entry({ relativePath: 'a/b.js', mode: 0o666, size: 1, mtime: 1 })
             ]
           }));
 
           expect(result).to.deep.equal([
-            ['unlink', 'c/d.js', file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } })],
-            ['rmdir',  'c/',     directory('c/')],
-            ['unlink', 'a/c.js', file('a/c.js', { mode: '0o666', size: 1, mtime: 1 })],
+            ['unlink', 'c/d.js', file('c/d.js', { mode: 0o666, size: 1, mtime: 1, meta: { rev: 0 } })],
+            ['rmdir',  'c',      directory('c/')],
+            ['unlink', 'a/c.js', file('a/c.js', { mode: 0o666, size: 1, mtime: 1 })],
           ]);
         });
 
-it('detects file updates', function() {
-  var entries = [
-    directory('a/'),
-    file('a/b.js', { mode: '0o666', size: 1, mtime: 2 }),
-    file('a/c.js', { mode: '0o666', size: 10, mtime: 1 }),
-    directory('c/'),
-    file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 1 } }),
-  ];
-
-  var result = fsTree.calculatePatch(new FSTree({
-    entries: entries
-  }), userProvidedIsEqual);
-
-  expect(result).to.deep.equal([
-    ['change', 'a/b.js', entries[1]],
-    ['change', 'a/c.js', entries[2]],
-    ['change', 'c/d.js', entries[4]],
-  ]);
-});
-
-        it('detects directory updates from user-supplied meta', function () {
+        it('detects file updates', function() {
           var entries = [
-            directory('a/', { meta: { link: true } }),
-            file('a/b.js', { mode: '0o666', size: 1, mtime: 1 }),
-            file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
+            directory('a/'),
+            file('a/b.js', { mode: 0o666, size: 1, mtime: 2 }),
+            file('a/c.js', { mode: 0o666, size: 10, mtime: 1 }),
             directory('c/'),
-            file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } })
+            file('c/d.js', { mode: 0o666, size: 1, mtime: 1, meta: { rev: 1 } }),
           ];
 
           var result = fsTree.calculatePatch(new FSTree({
@@ -510,20 +498,40 @@ it('detects file updates', function() {
           }), userProvidedIsEqual);
 
           expect(result).to.deep.equal([
-            ['change', 'a/', entries[0]]
+            ['change', 'a/b.js', entries[1]],
+            ['change', 'a/c.js', entries[2]],
+            ['change', 'c/d.js', entries[4]],
+          ]);
+        });
+
+        it('detects directory updates from user-supplied meta', function () {
+          var entries = [
+            directory('a/', { meta: { link: true } }),
+            file('a/b.js', { mode: 0o666, size: 1, mtime: 1 }),
+            file('a/c.js', { mode: 0o666, size: 1, mtime: 1 }),
+            directory('c/'),
+            file('c/d.js', { mode: 0o666, size: 1, mtime: 1, meta: { rev: 0 } })
+          ];
+
+          var result = fsTree.calculatePatch(new FSTree({
+            entries: entries
+          }), userProvidedIsEqual);
+
+          expect(result).to.deep.equal([
+            ['change', 'a', entries[0]]
           ]);
         });
 
         it('passes the rhs user-supplied entry on updates', function () {
           var bEntry = file('a/b.js', {
-            mode: '0o666', size: 1, mtime: 2, meta: { link: true }
+            mode: 0o666, size: 1, mtime: 2, meta: { link: true }
           });
           var entries = [
             directory('a/'),
             bEntry,
-            file('a/c.js', { mode: '0o666', size: 1, mtime: 1 }),
+            file('a/c.js', { mode: 0o666, size: 1, mtime: 1 }),
             directory('c/'),
-            file('c/d.js', { mode: '0o666', size: 1, mtime: 1, meta: { rev: 0 } }),
+            file('c/d.js', { mode: 0o666, size: 1, mtime: 1, meta: { rev: 0 } }),
           ];
 
           var result = fsTree.calculatePatch(new FSTree({
@@ -541,12 +549,12 @@ it('detects file updates', function() {
       beforeEach( function() {
         fsTree = new FSTree({
           entries: [
-            entry({ relativePath: 'a.js', mode: '0o666', size: 1, mtime: 1 }),
-            entry({ relativePath: 'b.js', mode: '0o666', size: 1, mtime: 1 }),
-            entry({ relativePath: 'one/a.js', mode: '0o666', size: 1, mtime: 1 }),
-            entry({ relativePath: 'one/b.js', mode: '0o666', size: 1, mtime: 1 }),
-            entry({ relativePath: 'one/two/a.js', mode: '0o666', size: 1, mtime: 1 }),
-            entry({ relativePath: 'one/two/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'a.js', mode: 0o666, size: 1, mtime: 1 }),
+            entry({ relativePath: 'b.js', mode: 0o666, size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/a.js', mode: 0o666, size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/b.js', mode: 0o666, size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/a.js', mode: 0o666, size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/b.js', mode: 0o666, size: 1, mtime: 1 }),
           ]
         });
       });
@@ -554,19 +562,19 @@ it('detects file updates', function() {
       it('catches each update', function() {
         var result = fsTree.calculatePatch(new FSTree({
           entries: [
-            entry({ relativePath: 'a.js', mode: '0o666', size: 1, mtime: 2 }),
-            entry({ relativePath: 'b.js', mode: '0o666', size: 1, mtime: 1 }),
-            entry({ relativePath: 'one/a.js', mode: '0o666', size: 10, mtime: 1 }),
-            entry({ relativePath: 'one/b.js', mode: '0o666', size: 1, mtime: 1 }),
-            entry({ relativePath: 'one/two/a.js', mode: '0o667', size: 1, mtime: 1 }),
-            entry({ relativePath: 'one/two/b.js', mode: '0o666', size: 1, mtime: 1 }),
+            entry({ relativePath: 'a.js', mode: 0o666, size: 1, mtime: 2 }),
+            entry({ relativePath: 'b.js', mode: 0o666, size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/a.js', mode: 0o666, size: 10, mtime: 1 }),
+            entry({ relativePath: 'one/b.js', mode: 0o666, size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/a.js', mode: 0o667, size: 1, mtime: 1 }),
+            entry({ relativePath: 'one/two/b.js', mode: 0o666, size: 1, mtime: 1 }),
           ]
         }));
 
         expect(result).to.deep.equal([
-          ['change', 'a.js', entry({ relativePath: 'a.js', size: 1, mtime: 2, mode: '0o666' })],
-          ['change', 'one/a.js', entry({ relativePath: 'one/a.js', size: 10, mtime: 1, mode: '0o666'})],
-          ['change', 'one/two/a.js', entry({ relativePath: 'one/two/a.js', mode: '0o667', size: 1, mtime: 1})],
+          ['change', 'a.js', entry({ relativePath: 'a.js', size: 1, mtime: 2, mode: 0o666 })],
+          ['change', 'one/a.js', entry({ relativePath: 'one/a.js', size: 10, mtime: 1, mode: 0o666})],
+          ['change', 'one/two/a.js', entry({ relativePath: 'one/two/a.js', mode: 0o667, size: 1, mtime: 1})],
         ]);
       });
     });
@@ -611,7 +619,7 @@ it('detects file updates', function() {
           ]))).to.deep.equal([
             ['unlink', 'foo/two.js', file('foo/two.js')],
             ['unlink', 'foo/one.js', file('foo/one.js')],
-            ['rmdir',  'foo/',       directory('foo/')],
+            ['rmdir',  'foo',        directory('foo/')],
             ['unlink', 'bar/one.js', file('bar/one.js')],
           ]);
         });
@@ -625,7 +633,7 @@ it('detects file updates', function() {
           ]))).to.deep.equal([
             ['unlink', 'foo/two.js',    file('foo/two.js')],
             ['unlink', 'foo/one.js',    file('foo/one.js')],
-            ['rmdir',  'foo/',          directory('foo/')],
+            ['rmdir',  'foo',           directory('foo/')],
             ['unlink', 'bar/two.js',    file('bar/two.js')],
             ['unlink', 'bar/one.js',    file('bar/one.js')],
             ['create', 'bar/three.js',  file('bar/three.js')],
@@ -649,8 +657,8 @@ it('detects file updates', function() {
           expect(fsTree.calculatePatch(FSTree.fromPaths([]))).to.deep.equal([
             ['unlink', 'foo.js',          file('foo.js')],
             ['unlink', 'bar/quz/baz.js',  file('bar/quz/baz.js')],
-            ['rmdir', 'bar/quz/',         directory('bar/quz/')],
-            ['rmdir', 'bar/',             directory('bar/')],
+            ['rmdir',  'bar/quz',         directory('bar/quz/')],
+            ['rmdir',  'bar',             directory('bar/')],
           ]);
         });
       });
@@ -698,7 +706,7 @@ it('detects file updates', function() {
             'subdir1/subsubdir1/foo.png'
           ]))).to.deep.equal([
             ['unlink', 'subdir2/bar.css', file('subdir2/bar.css')],
-            ['rmdir',  'subdir2/',        directory('subdir2/')]
+            ['rmdir',  'subdir2',         directory('subdir2/')]
           ]);
         });
       });
@@ -717,7 +725,7 @@ it('detects file updates', function() {
           'subdir1'
         ]))).to.deep.equal([
           ['unlink', 'subdir1/foo', file('subdir1/foo')],
-          ['rmdir',  'subdir1/',    directory('subdir1/')],
+          ['rmdir',  'subdir1',     directory('subdir1')],
           ['create', 'subdir1',     file('subdir1')],
         ]);
       });
@@ -736,7 +744,7 @@ it('detects file updates', function() {
           'subdir1/foo'
         ]))).to.deep.equal([
           ['unlink', 'subdir1',     file('subdir1')],
-          ['mkdir',  'subdir1/',    directory('subdir1/')],
+          ['mkdir',  'subdir1',     directory('subdir1')],
           ['create', 'subdir1/foo', file('subdir1/foo')]
         ]);
       });
@@ -762,11 +770,11 @@ it('detects file updates', function() {
         ]));
 
         expect(result).to.deep.equal([
-          ['rmdir', 'dir3/subdir1/',  directory('dir3/subdir1/')],
-          ['rmdir', 'dir/',           directory('dir/')],
+          ['rmdir', 'dir3/subdir1',   directory('dir3/subdir1')],
+          ['rmdir', 'dir',            directory('dir')],
           // This no-op (rmdir dir3; mkdir dir3) is not fundamental: a future
           // iteration could reasonably optimize it away
-          ['mkdir', 'dir4/',          directory('dir4/')],
+          ['mkdir', 'dir4',           directory('dir4')],
         ]);
       });
     });
@@ -809,7 +817,7 @@ it('detects file updates', function() {
 
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
-          ['rmdir', 'parent/subdir/',       directory('parent/subdir/')],
+          ['rmdir', 'parent/subdir',        directory('parent/subdir')],
           ['create', 'parent/a.js',         file('parent/a.js')],
         ]);
       });
@@ -827,7 +835,7 @@ it('detects file updates', function() {
 
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js',        file('parent/subdir/a.js')],
-          ['mkdir', 'parent/subdir/subdir/',      directory('parent/subdir/subdir/')],
+          ['mkdir', 'parent/subdir/subdir',       directory('parent/subdir/subdir')],
           ['create', 'parent/subdir/subdir/a.js', file('parent/subdir/subdir/a.js')],
         ]);
       });
@@ -843,7 +851,7 @@ it('detects file updates', function() {
 
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
-          ['rmdir', 'parent/subdir/',       directory('parent/subdir/')]
+          ['rmdir', 'parent/subdir',        directory('parent/subdir')]
         ]);
       });
 
@@ -860,8 +868,8 @@ it('detects file updates', function() {
 
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
-          ['rmdir', 'parent/subdir/',       directory('parent/subdir/')],
-          ['mkdir', 'parent/subdir2/',      directory('parent/subdir2/')],
+          ['rmdir', 'parent/subdir',        directory('parent/subdir')],
+          ['mkdir', 'parent/subdir2',       directory('parent/subdir2')],
           ['create', 'parent/subdir2/a.js', file('parent/subdir2/a.js')],
         ]);
       });
@@ -1041,7 +1049,7 @@ it('detects file updates', function() {
     });
   });
 
-  describe.only('fs', function() {
+  describe('fs', function() {
     var tree;
     var ROOT = path.resolve('tmp/fs-test-root/');
 
@@ -1052,6 +1060,7 @@ it('detects file updates', function() {
         'hello.txt': "Hello, World!\n",
         'my-directory': {},
       });
+
       tree = new FSTree({
         entries: walkSync.entries(__dirname + '/fixtures'),
         root: ROOT
@@ -1062,8 +1071,61 @@ it('detects file updates', function() {
       fs.removeSync(ROOT);
     });
 
-    // TODO: doubts; we added this b/c of failures from `this.root + 'wat'`
-    // but the error is really in that path construction
+    describe('.findByRelativePath', function () {
+      it('missing file', function () {
+        expect(tree.findByRelativePath('missing/file')).to.eql({
+          entry: null,
+          index: -1
+        });
+      });
+
+      it('file', function () {
+        let {
+          entry,
+          index
+        } = tree.findByRelativePath('hello.txt');
+
+        expect(index).to.gt(-1);
+        expect(entry).to.have.property('relativePath', 'hello.txt');
+        expect(entry).to.have.property('mode');
+        expect(entry).to.have.property('size');
+        expect(entry).to.have.property('mtime');
+      });
+
+      it('missing directory', function () {
+        expect(tree.findByRelativePath('missing/directory')).to.eql({
+          index: -1,
+          entry: null
+        });
+      });
+
+      it('directory with trailing slash', function () {
+        let {
+          index,
+          entry
+        } = tree.findByRelativePath('my-directory/');
+
+        expect(index).to.gt(-1);
+        expect(entry).to.have.property('relativePath', 'my-directory');
+        expect(entry).to.have.property('mode');
+        expect(entry).to.have.property('size');
+        expect(entry).to.have.property('mtime');
+      });
+
+      it('directory without trailing slash', function () {
+        let {
+          index,
+          entry
+        } = tree.findByRelativePath('my-directory');
+
+        expect(index).to.gt(-1);
+        expect(entry).to.have.property('relativePath', 'my-directory');
+        expect(entry).to.have.property('mode');
+        expect(entry).to.have.property('size');
+        expect(entry).to.have.property('mtime');
+      });
+    });
+
     it('ensures trailing slash for root', function() {
       expect(function() {
         new FSTree({ root: null })
@@ -1280,13 +1342,15 @@ it('detects file updates', function() {
         let [[operation, relativePath, entry]] = tree.changes();
 
         expect(operation).to.eql('mkdir');
-        expect(relativePath).to.eql('new-directory/');
-        expect(entry).to.have.property('relativePath', 'new-directory/');
+        expect(relativePath).to.eql('new-directory');
+        expect(entry).to.have.property('relativePath', 'new-directory');
         expect(entry).to.have.property('checksum', null);
-        expect(entry).to.have.property('mode', 0);
+        expect(entry).to.have.property('mode');
+        expect(entry.isDirectory()).to.eql(true);
         expect(entry).to.have.property('mtime');
         expect(tree.changes()).to.have.property('length', 1);
 
+        expect(tree.statSync('new-directory/')).to.eql(entry);
         expect(tree.statSync('new-directory')).to.eql(entry);
       });
 
@@ -1303,7 +1367,7 @@ it('detects file updates', function() {
         expect(tree.changes()).to.eql([]);
       });
 
-			it('directory/ -> directory (idempotence, path normalization)', function () {
+      it('directory/ -> directory (idempotence, path normalization)', function () {
         var old = fs.statSync(`${tree.root}/my-directory`);
 
         tree.mkdirSync('my-directory');
@@ -1314,7 +1378,7 @@ it('detects file updates', function() {
         expect(old).to.have.property('mode', current.mode);
         expect(old).to.have.property('size', current.size);
         expect(tree.changes()).to.eql([]);
-			});
+      });
 
       // describe('file -> directory (TDB)');
 
@@ -1391,13 +1455,13 @@ it('detects file updates', function() {
 
       expect(matched).to.have.property('length', 8);
       expect(matched.map(function(entry) { return entry.relativePath; })).to.eql([
-        'a/',
-        'a/b/',
-        'a/b/c/',
-        'a/b/c/d/',
+        'a',
+        'a/b',
+        'a/b/c',
+        'a/b/c/d',
         'a/b/c/d/foo.js',
-        'a/b/q/',
-        'a/b/q/r/',
+        'a/b/q',
+        'a/b/q/r',
         'a/b/q/r/bar.js',
       ]);
     });
@@ -1406,11 +1470,11 @@ it('detects file updates', function() {
       var matched = tree.match({ include: ['a/b/c/**/*'] });
 
       expect(matched).to.have.property('length', 5);
-      expect(matched.map(function(entry) { return entry.relativePath; })).to.eql([
-        'a/',
-        'a/b/',
-        'a/b/c/',
-        'a/b/c/d/',
+      expect(matched.map(({ relativePath }) => relativePath)).to.eql([
+        'a',
+        'a/b',
+        'a/b/c',
+        'a/b/c/d',
         'a/b/c/d/foo.js',
       ]);
     })

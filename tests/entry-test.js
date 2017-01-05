@@ -13,24 +13,6 @@ describe('Entry', function() {
     var size = 1337;
     var mtime = Date.now();
 
-    it('supports omitting mode for files', function() {
-      var entry = new Entry('/foo.js', size, mtime);
-      expect(entry.relativePath).to.equal('/foo.js');
-      expect(entry.size).to.equal(size);
-      expect(entry.mtime).to.equal(mtime);
-      expect(entry.mode).to.equal(0);
-      expect(entry.isDirectory()).to.not.be.ok;
-    });
-
-    it('supports omitting mode for directories', function() {
-      var entry = new Entry('/foo/', size, mtime);
-      expect(entry.relativePath).to.equal('/foo/');
-      expect(entry.size).to.equal(size);
-      expect(entry.mtime).to.equal(mtime);
-      expect(entry.mode).to.equal(16877);
-      expect(entry.isDirectory()).to.be.ok;
-    });
-
     it('supports including manually defined mode', function() {
       var entry = new Entry('/foo.js', size, mtime, 1);
       expect(entry.relativePath).to.equal('/foo.js');
@@ -44,6 +26,28 @@ describe('Entry', function() {
       expect(function() {
         return new Entry('/foo.js', size, mtime, '1');
       }).to.throw('Expected `mode` to be of type `number` but was of type `string` instead.')
+    });
+
+    it('strips trailing /', function() {
+      expect(new Entry('/foo/', 0, 0, Entry.DIRECTORY_MODE).relativePath).to.eql('/foo');
+    });
+  });
+
+  describe('.fromPath', function () {
+    it('infers directories from trailing /', function() {
+      let entry = Entry.fromPath('/foo/');
+      expect(entry.relativePath).to.equal('/foo');
+      expect(entry.size).to.equal(0);
+      expect(entry.mtime).to.be.gt(0);
+      expect(entry.isDirectory()).to.eql(true);
+    });
+
+    it('infers files from lack of trailing /', function() {
+      let entry = Entry.fromPath('/foo');
+      expect(entry.relativePath).to.equal('/foo');
+      expect(entry.size).to.equal(0);
+      expect(entry.mtime).to.be.gt(0);
+      expect(entry.isDirectory()).to.eql(false);
     });
   });
 
@@ -81,7 +85,7 @@ describe('Entry', function() {
       expect(entry.mode).to.equal(stat.mode);
       expect(entry.size).to.equal(stat.size);
       expect(entry.mtime).to.equal(stat.mtime);
-      expect(entry.relativePath).to.equal(path);
+      expect(entry.relativePath).to.equal(FIXTURE_DIR + '/foo');
     });
   });
 });
