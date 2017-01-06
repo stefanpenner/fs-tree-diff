@@ -19,7 +19,7 @@ let fsTree;
 
 describe('FSTree', function() {
   function merge(x, y) {
-    var result = {};
+    let result = {};
 
     Object.keys(x || {}).forEach(function(key) {
       result[key] = x[key];
@@ -32,7 +32,14 @@ describe('FSTree', function() {
     return result;
   }
 
-  function MockEntry({ relativePath, mode, size, mtime, checksum, meta }) {
+  function MockEntry(options) {
+    let relativePath = options.relativePath;
+    let mode = options.mode;
+    let size = options.size;
+    let mtime = options.mtime;
+    let checksum = options.checksum;
+    let meta = options.meta;
+
     Entry.call(this, relativePath, size, mtime, mode, checksum);
 
     if (meta) {
@@ -43,15 +50,15 @@ describe('FSTree', function() {
   MockEntry.prototype = Entry.prototype;
 
   function metaIsEqual(a, b) {
-    var aMeta = a.meta;
-    var bMeta = b.meta;
-    var metaKeys = aMeta ? Object.keys(aMeta) : [];
-    var otherMetaKeys = bMeta ? Object.keys(bMeta) : [];
+    let aMeta = a.meta;
+    let bMeta = b.meta;
+    let metaKeys = aMeta ? Object.keys(aMeta) : [];
+    let otherMetaKeys = bMeta ? Object.keys(bMeta) : [];
 
     if (metaKeys.length !== Object.keys(otherMetaKeys).length) {
       return false;
     } else {
-      for (var i=0; i<metaKeys.length; ++i) {
+      for (let i=0; i<metaKeys.length; ++i) {
         if (aMeta[metaKeys[i]] !== bMeta[metaKeys[i]]) {
           return false;
         }
@@ -171,7 +178,7 @@ describe('FSTree', function() {
         });
 
         it('does not mutate its input', function() {
-          var paths = [
+          let paths = [
             'foo/',
             'foo/a.js',
             'bar/',
@@ -190,7 +197,7 @@ describe('FSTree', function() {
     });
 
     it('creates trees from paths', function() {
-      var result;
+      let result;
 
       fsTree = FSTree.fromPaths([
         'a.js',
@@ -241,7 +248,7 @@ describe('FSTree', function() {
     });
 
     it('creates tree from entries', function() {
-      var fsTree = FSTree.fromEntries([
+      let fsTree = FSTree.fromEntries([
         file('a/b.js', { size: 1, mtime: 1 }),
         file('a/c.js', { size: 1, mtime: 1 }),
         file('c/d.js', { size: 1, mtime: 1 }),
@@ -249,7 +256,7 @@ describe('FSTree', function() {
 
       expect(fsTree.size).to.eq(3);
 
-      var result = fsTree.calculatePatch(FSTree.fromEntries([
+      let result = fsTree.calculatePatch(FSTree.fromEntries([
         file('a/b.js', { size: 1, mtime: 2 }),
         file('a/c.js', { size: 1, mtime: 1 }),
         file('c/d.js', { size: 1, mtime: 1 }),
@@ -290,7 +297,7 @@ describe('FSTree', function() {
       });
 
       it('inserts one file into sorted location', function() {
-        var result;
+        let result;
 
         fsTree = FSTree.fromPaths([
           'a.js',
@@ -309,7 +316,7 @@ describe('FSTree', function() {
       });
 
       it('inserts several entries', function() {
-        var result;
+        let result;
 
         fsTree = FSTree.fromPaths([
           'a.js',
@@ -336,7 +343,7 @@ describe('FSTree', function() {
       });
 
       it('replaces duplicates', function() {
-        var result;
+        let result;
 
         fsTree = FSTree.fromPaths([
           'a.js',
@@ -359,7 +366,7 @@ describe('FSTree', function() {
 
     context(".addPaths", function() {
       it("passes through to .addEntries", function() {
-        var result;
+        let result;
 
         fsTree = FSTree.fromPaths([
           'a.js',
@@ -455,7 +462,7 @@ describe('FSTree', function() {
         });
 
         it('detects additions', function() {
-          var result = fsTree.calculatePatch(new FSTree({
+          let result = fsTree.calculatePatch(new FSTree({
             entries: [
               directory('a/'),
               file('a/b.js', { mode: 0o666, size: 1, mtime: 1 }),
@@ -472,7 +479,7 @@ describe('FSTree', function() {
         });
 
         it('detects removals', function() {
-          var result = fsTree.calculatePatch(new FSTree({
+          let result = fsTree.calculatePatch(new FSTree({
             entries: [
               directory('a/'),
               entry({ relativePath: 'a/b.js', mode: 0o666, size: 1, mtime: 1 })
@@ -487,7 +494,7 @@ describe('FSTree', function() {
         });
 
         it('detects file updates', function() {
-          var entries = [
+          let entries = [
             directory('a/'),
             file('a/b.js', { mode: 0o666, size: 1, mtime: 2 }),
             file('a/c.js', { mode: 0o666, size: 10, mtime: 1 }),
@@ -495,7 +502,7 @@ describe('FSTree', function() {
             file('c/d.js', { mode: 0o666, size: 1, mtime: 1, meta: { rev: 1 } }),
           ];
 
-          var result = fsTree.calculatePatch(new FSTree({
+          let result = fsTree.calculatePatch(new FSTree({
             entries: entries
           }), userProvidedIsEqual);
 
@@ -507,7 +514,7 @@ describe('FSTree', function() {
         });
 
         it('detects directory updates from user-supplied meta', function () {
-          var entries = [
+          let entries = [
             directory('a/', { meta: { link: true } }),
             file('a/b.js', { mode: 0o666, size: 1, mtime: 1 }),
             file('a/c.js', { mode: 0o666, size: 1, mtime: 1 }),
@@ -515,7 +522,7 @@ describe('FSTree', function() {
             file('c/d.js', { mode: 0o666, size: 1, mtime: 1, meta: { rev: 0 } })
           ];
 
-          var result = fsTree.calculatePatch(new FSTree({
+          let result = fsTree.calculatePatch(new FSTree({
             entries: entries
           }), userProvidedIsEqual);
 
@@ -525,10 +532,10 @@ describe('FSTree', function() {
         });
 
         it('passes the rhs user-supplied entry on updates', function () {
-          var bEntry = file('a/b.js', {
+          let bEntry = file('a/b.js', {
             mode: 0o666, size: 1, mtime: 2, meta: { link: true }
           });
-          var entries = [
+          let entries = [
             directory('a/'),
             bEntry,
             file('a/c.js', { mode: 0o666, size: 1, mtime: 1 }),
@@ -536,7 +543,7 @@ describe('FSTree', function() {
             file('c/d.js', { mode: 0o666, size: 1, mtime: 1, meta: { rev: 0 } }),
           ];
 
-          var result = fsTree.calculatePatch(new FSTree({
+          let result = fsTree.calculatePatch(new FSTree({
             entries: entries
           }));
 
@@ -562,7 +569,7 @@ describe('FSTree', function() {
       });
 
       it('catches each update', function() {
-        var result = fsTree.calculatePatch(new FSTree({
+        let result = fsTree.calculatePatch(new FSTree({
           entries: [
             entry({ relativePath: 'a.js', mode: 0o666, size: 1, mtime: 2 }),
             entry({ relativePath: 'b.js', mode: 0o666, size: 1, mtime: 1 }),
@@ -764,7 +771,7 @@ describe('FSTree', function() {
       });
 
       it('it unlinks the file, and makes the folder and then creates the file', function() {
-        var result = fsTree.calculatePatch(FSTree.fromPaths([
+        let result = fsTree.calculatePatch(FSTree.fromPaths([
           'dir2/',
           'dir2/subdir1/',
           'dir3/',
@@ -793,14 +800,14 @@ describe('FSTree', function() {
       });
 
       it('moving a file out of a directory does not edit directory structure', function () {
-        var newTree = new FSTree({
+        let newTree = new FSTree({
           entries: [
             entry(directory('parent/')),
             entry(file('parent/a.js')),
             entry(directory('parent/subdir/')),
           ]
         });
-        var result = fsTree.calculatePatch(newTree);
+        let result = fsTree.calculatePatch(newTree);
 
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
@@ -809,13 +816,13 @@ describe('FSTree', function() {
       });
 
       it('moving a file out of a subdir and removing the subdir does not recreate parent', function () {
-        var newTree = new FSTree({
+        let newTree = new FSTree({
           entries: [
             entry(directory('parent/')),
             entry(file('parent/a.js'))
           ]
         });
-        var result = fsTree.calculatePatch(newTree);
+        let result = fsTree.calculatePatch(newTree);
 
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
@@ -825,7 +832,7 @@ describe('FSTree', function() {
       });
 
       it('moving a file into nest subdir does not recreate subdir and parent', function () {
-        var newTree = new FSTree({
+        let newTree = new FSTree({
           entries: [
             entry(directory('parent/')),
             entry(directory('parent/subdir/')),
@@ -833,7 +840,7 @@ describe('FSTree', function() {
             entry(file('parent/subdir/subdir/a.js'))
           ]
         });
-        var result = fsTree.calculatePatch(newTree);
+        let result = fsTree.calculatePatch(newTree);
 
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js',        file('parent/subdir/a.js')],
@@ -843,13 +850,13 @@ describe('FSTree', function() {
       });
 
       it('always remove files first if dir also needs to be removed', function() {
-        var newTree = new FSTree({
+        let newTree = new FSTree({
           entries: [
             entry(directory('parent/'))
           ]
         });
 
-        var result = fsTree.calculatePatch(newTree);
+        let result = fsTree.calculatePatch(newTree);
 
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
@@ -858,7 +865,7 @@ describe('FSTree', function() {
       });
 
       it('renaming a subdir does not recreate parent', function () {
-        var newTree = new FSTree({
+        let newTree = new FSTree({
           entries: [
             entry(directory('parent/')),
             entry(directory('parent/subdir2/')),
@@ -866,7 +873,7 @@ describe('FSTree', function() {
           ]
         });
 
-        var result = fsTree.calculatePatch(newTree);
+        let result = fsTree.calculatePatch(newTree);
 
         expect(result).to.deep.equal([
           ['unlink', 'parent/subdir/a.js',  file('parent/subdir/a.js')],
@@ -879,8 +886,8 @@ describe('FSTree', function() {
   });
 
   describe('.applyPatch', function() {
-    var inputDir = 'tmp/fixture/input';
-    var outputDir = 'tmp/fixture/output';
+    let inputDir = 'tmp/fixture/input';
+    let outputDir = 'tmp/fixture/output';
 
     beforeEach(function() {
       fs.mkdirpSync(inputDir);
@@ -892,17 +899,17 @@ describe('FSTree', function() {
     });
 
     it('applies all types of operations', function() {
-      var firstTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      let firstTree = FSTree.fromEntries(walkSync.entries(inputDir));
 
-      var fooIndex = path.join(inputDir, 'foo/index.js');
-      var barIndex = path.join(inputDir, 'bar/index.js');
-      var barOutput = path.join(outputDir, 'bar/index.js')
+      let fooIndex = path.join(inputDir, 'foo/index.js');
+      let barIndex = path.join(inputDir, 'bar/index.js');
+      let barOutput = path.join(outputDir, 'bar/index.js')
 
       fs.outputFileSync(fooIndex, 'foo'); // mkdir + create
       fs.outputFileSync(barIndex, 'bar'); // mkdir + create
 
-      var secondTree = FSTree.fromEntries(walkSync.entries(inputDir));
-      var patch = firstTree.calculatePatch(secondTree);
+      let secondTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      let patch = firstTree.calculatePatch(secondTree);
 
       FSTree.applyPatch(inputDir, outputDir, patch);
       expect(walkSync(outputDir)).to.deep.equal([
@@ -916,7 +923,7 @@ describe('FSTree', function() {
       fs.removeSync(path.dirname(fooIndex)); // unlink + rmdir
       fs.outputFileSync(barIndex, 'boo'); // change
 
-      var thirdTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      let thirdTree = FSTree.fromEntries(walkSync.entries(inputDir));
       patch = secondTree.calculatePatch(thirdTree);
 
       FSTree.applyPatch(inputDir, outputDir, patch);
@@ -928,17 +935,17 @@ describe('FSTree', function() {
     });
 
     it('supports custom delegate methods', function() {
-      var inputDir = 'tmp/fixture/input';
-      var outputDir = 'tmp/fixture/output';
+      let inputDir = 'tmp/fixture/input';
+      let outputDir = 'tmp/fixture/output';
 
-      var stats = {
+      let stats = {
         unlink: 0,
         rmdir: 0,
         mkdir: 0,
         change: 0,
         create: 0
       };
-      var delegate = {
+      let delegate = {
         unlink: function() {
           stats.unlink++;
         },
@@ -956,7 +963,7 @@ describe('FSTree', function() {
         }
       };
 
-      var patch = [
+      let patch = [
         [ 'mkdir', 'bar/' ],
         [ 'create', 'bar/index.js' ],
         [ 'mkdir', 'foo/' ],
@@ -978,7 +985,7 @@ describe('FSTree', function() {
     });
 
     it('throws an error when a patch has an unknown operation type', function() {
-      var patch = [ [ 'delete', '/foo.js' ] ];
+      let patch = [ [ 'delete', '/foo.js' ] ];
       expect(function() {
         FSTree.applyPatch('/fixture/input', '/fixture/output', patch)
       }).to.throw('Unable to apply patch operation: delete. The value of delegate.delete is of type undefined, and not a function. Check the `delegate` argument to `FSTree.prototype.applyPatch`.');
@@ -986,8 +993,8 @@ describe('FSTree', function() {
   });
 
   describe('.calculateAndApplyPatch', function() {
-    var inputDir = 'tmp/fixture/input';
-    var outputDir = 'tmp/fixture/output';
+    let inputDir = 'tmp/fixture/input';
+    let outputDir = 'tmp/fixture/output';
 
     beforeEach(function() {
       fs.mkdirpSync(inputDir);
@@ -999,16 +1006,16 @@ describe('FSTree', function() {
     });
 
     it('calculates and applies a patch properly', function() {
-      var firstTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      let firstTree = FSTree.fromEntries(walkSync.entries(inputDir));
 
-      var fooIndex = path.join(inputDir, 'foo/index.js');
-      var barIndex = path.join(inputDir, 'bar/index.js');
-      var barOutput = path.join(outputDir, 'bar/index.js')
+      let fooIndex = path.join(inputDir, 'foo/index.js');
+      let barIndex = path.join(inputDir, 'bar/index.js');
+      let barOutput = path.join(outputDir, 'bar/index.js')
 
       fs.outputFileSync(fooIndex, 'foo');
       fs.outputFileSync(barIndex, 'bar');
 
-      var secondTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      let secondTree = FSTree.fromEntries(walkSync.entries(inputDir));
       firstTree.calculateAndApplyPatch(secondTree, inputDir, outputDir);
 
       expect(walkSync(outputDir)).to.deep.equal([
@@ -1020,11 +1027,11 @@ describe('FSTree', function() {
     });
 
     it('calculates and applies a patch properly with custom delegates', function() {
-      var stats = {
+      let stats = {
         mkdir: 0,
         create: 0
       };
-      var delegate = {
+      let delegate = {
         mkdir: function() {
           stats.mkdir++;
         },
@@ -1033,15 +1040,15 @@ describe('FSTree', function() {
         }
       };
 
-      var firstTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      let firstTree = FSTree.fromEntries(walkSync.entries(inputDir));
 
-      var fooIndex = path.join(inputDir, 'foo/index.js');
-      var barIndex = path.join(inputDir, 'bar/index.js');
+      let fooIndex = path.join(inputDir, 'foo/index.js');
+      let barIndex = path.join(inputDir, 'bar/index.js');
 
       fs.outputFileSync(fooIndex, 'foo');
       fs.outputFileSync(barIndex, 'bar');
 
-      var secondTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      let secondTree = FSTree.fromEntries(walkSync.entries(inputDir));
       firstTree.calculateAndApplyPatch(secondTree, inputDir, outputDir, delegate);
 
       expect(stats).to.deep.equal({
@@ -1052,8 +1059,8 @@ describe('FSTree', function() {
   });
 
   describe('fs', function() {
-    var tree;
-    var ROOT = path.resolve('tmp/fs-test-root/');
+    let tree;
+    let ROOT = path.resolve('tmp/fs-test-root/');
 
     beforeEach(function() {
       fs.mkdirpSync(ROOT);
@@ -1082,10 +1089,9 @@ describe('FSTree', function() {
       });
 
       it('file', function () {
-        let {
-          entry,
-          index
-        } = tree.findByRelativePath('hello.txt');
+        let result = tree.findByRelativePath('hello.txt');
+        let entry = result.entry;
+        let index = result.index;
 
         expect(index).to.gt(-1);
         expect(entry).to.have.property('relativePath', 'hello.txt');
@@ -1102,10 +1108,9 @@ describe('FSTree', function() {
       });
 
       it('directory with trailing slash', function () {
-        let {
-          index,
-          entry
-        } = tree.findByRelativePath('my-directory/');
+        let result = tree.findByRelativePath('my-directory/');
+        let entry = result.entry;
+        let index = result.index;
 
         expect(index).to.gt(-1);
         expect(entry).to.have.property('relativePath', 'my-directory/');
@@ -1115,10 +1120,9 @@ describe('FSTree', function() {
       });
 
       it('directory without trailing slash', function () {
-        let {
-          index,
-          entry
-        } = tree.findByRelativePath('my-directory');
+        let result = tree.findByRelativePath('my-directory');
+        let entry = result.entry;
+        let index = result.index;
 
         expect(index).to.gt(-1);
         // we can findByRelativePath without the trailing /, but we get back the
@@ -1149,7 +1153,7 @@ describe('FSTree', function() {
     });
 
     /*
-     * var a = new Plugin();
+     * let a = new Plugin();
      *
      * a.in = parent; // frozen if not active
      * a.out = new FSTree();
@@ -1160,11 +1164,11 @@ describe('FSTree', function() {
      * });
      *
      * build() {
-     *   var in = this.input; // frozen reference
-     *   var out = this.output; // writable reference
+     *   let in = this.input; // frozen reference
+     *   let out = this.output; // writable reference
      *
      *   in.changes().forEach(function(patch) {
-     *     var relativePath = patch[0];
+     *     let relativePath = patch[0];
      *
      *     out.writeFileSync(relativePath, transform(in.readFileSync(relativePath));
      *   });
@@ -1217,7 +1221,7 @@ describe('FSTree', function() {
 
         expect(tree.writeFileSync('new-file.txt', 'new file'));
 
-        var changes = tree.changes();
+        let changes = tree.changes();
 
         expect(changes).to.have.deep.property('0.0', 'create');
         expect(changes).to.have.deep.property('0.1', 'new-file.txt');
@@ -1232,12 +1236,12 @@ describe('FSTree', function() {
 
       describe('idempotent', function() {
         it('is idempotent files added this session', function() {
-          var old = fs.statSync(tree.root + 'hello.txt');
-          var oldContent = fs.readFileSync(tree.root + 'hello.txt');
+          let old = fs.statSync(tree.root + 'hello.txt');
+          let oldContent = fs.readFileSync(tree.root + 'hello.txt');
 
           tree.writeFileSync('hello.txt', oldContent);
 
-          var current = fs.statSync(tree.root + 'hello.txt');
+          let current = fs.statSync(tree.root + 'hello.txt');
 
           expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
           expect(old).to.have.property('mode', current.mode);
@@ -1247,7 +1251,7 @@ describe('FSTree', function() {
 
         it('is idempotent across session', function() {
           tree.writeFileSync('new-file.txt', 'new file');
-          var changes = tree.changes();
+          let changes = tree.changes();
 
           expect(changes).to.have.deep.property('0.0', 'create');
           expect(changes).to.have.deep.property('0.1', 'new-file.txt');
@@ -1256,20 +1260,20 @@ describe('FSTree', function() {
           expect(changes).to.have.deep.property('0.2.mode', 0);
           expect(changes).to.have.deep.property('0.2.mtime');
 
-          var oldmtime = changes[0][2].mtime;
+          let oldmtime = changes[0][2].mtime;
           expect(changes).to.have.property('length', 1);
 
-          var old = fs.statSync(tree.root + 'new-file.txt');
+          let old = fs.statSync(tree.root + 'new-file.txt');
 
           tree.writeFileSync('new-file.txt', 'new file');
 
-          var current = fs.statSync(tree.root + 'new-file.txt');
+          let current = fs.statSync(tree.root + 'new-file.txt');
 
           expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
           expect(old).to.have.property('mode', current.mode);
           expect(old).to.have.property('size', current.size);
 
-          var changes = tree.changes();
+          changes = tree.changes();
           expect(changes).to.have.deep.property('0.0', 'create');
           expect(changes).to.have.deep.property('0.1', 'new-file.txt');
           expect(changes).to.have.deep.property('0.2.relativePath', 'new-file.txt');
@@ -1287,16 +1291,16 @@ describe('FSTree', function() {
       describe('update', function() {
         it('tracks and correctly updates a file -> file', function() {
           tree.writeFileSync('new-file.txt', 'new file');
-          var old = fs.statSync(tree.root + 'new-file.txt');
+          let old = fs.statSync(tree.root + 'new-file.txt');
           tree.writeFileSync('new-file.txt', 'new different content');
 
-          var current = fs.statSync(tree.root + 'new-file.txt');
+          let current = fs.statSync(tree.root + 'new-file.txt');
 
           expect(old).to.have.property('mtime');
           expect(old).to.have.property('mode', current.mode);
           expect(old).to.have.property('size', 8);
 
-          var changes = tree.changes();
+          let changes = tree.changes();
 
           expect(changes).to.have.deep.property('0.0', 'change');
           expect(changes).to.have.deep.property('0.1', 'new-file.txt');
@@ -1343,7 +1347,10 @@ describe('FSTree', function() {
 
         expect(tree.mkdirSync('new-directory')).to.eql(undefined);
 
-        let [[operation, relativePath, entry]] = tree.changes();
+        let changes = tree.changes();
+        let operation = changes[0][0];
+        let relativePath = changes[0][1];
+        let entry = changes[0][2];
 
         expect(operation).to.eql('mkdir');
         expect(relativePath).to.eql('new-directory');
@@ -1359,11 +1366,11 @@ describe('FSTree', function() {
       });
 
       it('directory/ -> directory/ (idempotence)', function testDir2Dir() {
-        var old = fs.statSync(`${tree.root}/my-directory`);
+        let old = fs.statSync(`${tree.root}/my-directory`);
 
         tree.mkdirSync('my-directory/');
 
-        var current = fs.statSync(`${tree.root}/my-directory`);
+        let current = fs.statSync(`${tree.root}/my-directory`);
 
         expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
         expect(old).to.have.property('mode', current.mode);
@@ -1372,11 +1379,11 @@ describe('FSTree', function() {
       });
 
       it('directory/ -> directory (idempotence, path normalization)', function () {
-        var old = fs.statSync(`${tree.root}/my-directory`);
+        let old = fs.statSync(`${tree.root}/my-directory`);
 
         tree.mkdirSync('my-directory');
 
-        var current = fs.statSync(`${tree.root}/my-directory`);
+        let current = fs.statSync(`${tree.root}/my-directory`);
 
         expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
         expect(old).to.have.property('mode', current.mode);
@@ -1401,7 +1408,7 @@ describe('FSTree', function() {
   });
 
   describe('changes', function() {
-    var tree;
+    let tree;
 
     beforeEach(function() {
       tree = new FSTree({
@@ -1417,7 +1424,7 @@ describe('FSTree', function() {
     })
 
     it('hides no changes if all match', function() {
-      var changes = tree.changes({ include: ['**/*.js']});
+      let changes = tree.changes({ include: ['**/*.js']});
 
       expect(changes).to.have.property('length', 1);
       expect(changes).to.have.deep.property('0.length', 3);
@@ -1439,7 +1446,7 @@ describe('FSTree', function() {
   });
 
   describe('match', function() {
-    var tree;
+    let tree;
 
     beforeEach(function() {
       tree = new FSTree.fromEntries([
@@ -1455,7 +1462,7 @@ describe('FSTree', function() {
     })
 
     it('ignores nothing, if all match', function() {
-      var matched = tree.match({ include: ['**/*.js'] });
+      let matched = tree.match({ include: ['**/*.js'] });
 
       expect(matched).to.have.property('length', 8);
       expect(matched.map(function(entry) { return entry.relativePath; })).to.eql([
@@ -1471,10 +1478,10 @@ describe('FSTree', function() {
     });
 
     it('ignores those that do not match, if all match', function() {
-      var matched = tree.match({ include: ['a/b/c/**/*'] });
+      let matched = tree.match({ include: ['a/b/c/**/*'] });
 
       expect(matched).to.have.property('length', 5);
-      expect(matched.map(({ relativePath }) => relativePath)).to.eql([
+      expect(matched.map((entry) => entry.relativePath)).to.eql([
         'a',
         'a/b',
         'a/b/c',
