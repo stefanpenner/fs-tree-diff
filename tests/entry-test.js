@@ -1,10 +1,12 @@
 'use strict';
 
-var fs = require('fs-extra');
-var expect = require('chai').expect;
-var Entry = require('../lib/entry');
+const fs = require('fs-extra');
+const expect = require('chai').expect;
+const Entry = require('../lib/entry');
 
-var FIXTURE_DIR = 'fixture';
+const isDirectory = Entry.isDirectory;
+
+const FIXTURE_DIR = 'fixture';
 
 require('chai').config.truncateThreshold = 0;
 
@@ -19,7 +21,7 @@ describe('Entry', function() {
       expect(entry.size).to.equal(size);
       expect(entry.mtime).to.equal(mtime);
       expect(entry.mode).to.equal(1);
-      expect(entry.isDirectory()).to.not.be.ok;
+      expect(isDirectory(entry)).to.not.be.ok;
     });
 
     it('errors on a non-number mode', function() {
@@ -39,7 +41,7 @@ describe('Entry', function() {
       expect(entry.relativePath).to.equal('/foo');
       expect(entry.size).to.equal(0);
       expect(entry.mtime).to.be.gt(0);
-      expect(entry.isDirectory()).to.eql(true);
+      expect(isDirectory(entry)).to.eql(true);
     });
 
     it('infers files from lack of trailing /', function() {
@@ -47,7 +49,7 @@ describe('Entry', function() {
       expect(entry.relativePath).to.equal('/foo');
       expect(entry.size).to.equal(0);
       expect(entry.mtime).to.be.gt(0);
-      expect(entry.isDirectory()).to.eql(false);
+      expect(isDirectory(entry)).to.eql(false);
     });
   });
 
@@ -64,7 +66,7 @@ describe('Entry', function() {
       var stat = fs.statSync(path);
       var entry = Entry.fromStat(path, stat);
 
-      expect(entry.isDirectory()).to.not.be.ok;
+      expect(isDirectory(entry)).to.not.be.ok;
       expect(entry.mode).to.equal(stat.mode);
       expect(entry.size).to.equal(stat.size);
       expect(entry.mtime).to.equal(stat.mtime);
@@ -81,7 +83,7 @@ describe('Entry', function() {
       var stat = fs.statSync(path);
       var entry = Entry.fromStat(path, stat);
 
-      expect(entry.isDirectory()).to.be.ok;
+      expect(isDirectory(entry)).to.be.ok;
       expect(entry.mode).to.equal(stat.mode);
       expect(entry.size).to.equal(stat.size);
       expect(entry.mtime).to.equal(stat.mtime);

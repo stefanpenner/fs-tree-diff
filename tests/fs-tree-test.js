@@ -1,19 +1,21 @@
 'use strict';
 
-var fs = require('fs-extra');
-var path = require('path');
-var expect = require('chai').expect;
-var walkSync = require('walk-sync');
-var FSTree = require('../lib/index');
-var Entry = require('../lib/entry');
-var context = describe;
-var defaultIsEqual = FSTree.defaultIsEqual;
-var fsTree;
-var walkSync = require('walk-sync');
-var md5hex = require('md5hex');
-var fixturify = require('fixturify');
+const fs = require('fs-extra');
+const path = require('path');
+const expect = require('chai').expect;
+const walkSync = require('walk-sync');
+const FSTree = require('../lib/index');
+const Entry = require('../lib/entry');
+const context = describe;
+const defaultIsEqual = FSTree.defaultIsEqual;
+const md5hex = require('md5hex');
+const fixturify = require('fixturify');
+
+const isDirectory = Entry.isDirectory;
 
 require('chai').config.truncateThreshold = 0;
+
+let fsTree;
 
 describe('FSTree', function() {
   function merge(x, y) {
@@ -1106,7 +1108,7 @@ describe('FSTree', function() {
         } = tree.findByRelativePath('my-directory/');
 
         expect(index).to.gt(-1);
-        expect(entry).to.have.property('relativePath', 'my-directory');
+        expect(entry).to.have.property('relativePath', 'my-directory/');
         expect(entry).to.have.property('mode');
         expect(entry).to.have.property('size');
         expect(entry).to.have.property('mtime');
@@ -1119,7 +1121,9 @@ describe('FSTree', function() {
         } = tree.findByRelativePath('my-directory');
 
         expect(index).to.gt(-1);
-        expect(entry).to.have.property('relativePath', 'my-directory');
+        // we can findByRelativePath without the trailing /, but we get back the
+        // same entry we put in, from walk-sync this will have a trailing /
+        expect(entry).to.have.property('relativePath', 'my-directory/');
         expect(entry).to.have.property('mode');
         expect(entry).to.have.property('size');
         expect(entry).to.have.property('mtime');
@@ -1346,7 +1350,7 @@ describe('FSTree', function() {
         expect(entry).to.have.property('relativePath', 'new-directory');
         expect(entry).to.have.property('checksum', null);
         expect(entry).to.have.property('mode');
-        expect(entry.isDirectory()).to.eql(true);
+        expect(isDirectory(entry)).to.eql(true);
         expect(entry).to.have.property('mtime');
         expect(tree.changes()).to.have.property('length', 1);
 
@@ -1380,7 +1384,7 @@ describe('FSTree', function() {
         expect(tree.changes()).to.eql([]);
       });
 
-      // describe('file -> directory (TDB)');
+      // describe('file -> directory (error)');
 
       describe('start/stop', function() {
         it('does error when stopped', function() {

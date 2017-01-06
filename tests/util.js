@@ -1,16 +1,17 @@
 'use strict';
 
-var expect = require('chai').expect;
-var Entry = require('../lib/entry');
+const expect = require('chai').expect;
+const Entry = require('../lib/entry');
+const util = require('../lib/util');
+const treeOptionHelpers = require('../lib/tree-option-helpers');
 
-const {
-  commonPrefix,
-  basename,
-} = require('../lib/util')
-const {
-  computeImpliedEntries,
-  sortAndExpand
-} = require('../lib/tree-option-helpers')
+const entryRelativePath = util.entryRelativePath;
+const commonPrefix = util.commonPrefix;
+const basename = util.basename;
+const computeImpliedEntries = treeOptionHelpers.computeImpliedEntries;
+const sortAndExpand = treeOptionHelpers.sortAndExpand;
+const isDirectory = Entry.isDirectory;
+const isFile = Entry.isFile;
 
 require('chai').config.truncateThreshold = 0;
 
@@ -100,6 +101,26 @@ describe('util', function() {
         new Entry('a/b/q/r', 0, 0, Entry.DIRECTORY_MODE),
         new Entry('a/b/q/r/bar.js', 0, 0, 0),
       ]);
+    });
+  });
+
+  describe('entryRelativePath', function() {
+    it('strips nothing for file entries', function() {
+      expect(entryRelativePath(new Entry('my-path', 0, 0, 0))).to.eql('my-path');
+      expect(entryRelativePath(new Entry('my-path/', 0, 0, 0))).to.eql('my-path/');
+      expect(entryRelativePath(new Entry('my-path\\', 0, 0, 0))).to.eql('my-path\\');
+    });
+
+    it('strips trailing / or \\ for directory entries', function() {
+      expect(
+        entryRelativePath(new Entry('my-path', 0, 0, Entry.DIRECTORY_MODE))
+      ).to.eql('my-path');
+      expect(
+        entryRelativePath(new Entry('my-path/', 0, 0, Entry.DIRECTORY_MODE))
+      ).to.eql('my-path');
+      expect(
+        entryRelativePath(new Entry('my-path\\', 0, 0, Entry.DIRECTORY_MODE))
+      ).to.eql('my-path');
     });
   });
 });
