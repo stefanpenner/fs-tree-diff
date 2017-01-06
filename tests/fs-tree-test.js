@@ -1313,6 +1313,85 @@ describe('FSTree', function() {
       })
     });
 
+    describe.only('.symlinkSync', function() {
+      it('symlinks files', function() {
+        expect(tree.changes()).to.eql([]);
+
+        expect(tree.symlinkSync('/tmp/some-kinda-target', 'my-link'));
+
+        let changes = tree.changes();
+
+        expect(changes).to.have.deep.property('0.0', 'link');
+        expect(changes).to.have.deep.property('0.1', 'my-link');
+        expect(changes).to.have.deep.property('0.2.relativePath', 'my-link');
+        expect(changes).to.have.deep.property('0.2.mode', 0);
+        expect(changes).to.have.deep.property('0.2.mtime');
+        expect(changes).to.have.property('length', 1);
+
+        expect(tree.readlinkSync('my-link')).to.eql('/tmp/some-kinda-target');
+      });
+
+      describe('idempotent', function() {
+        beforeEach(function() {
+          fs.symlinkSync(`${tree.root}hello.txt`, `${tree.root}hi`);
+          let entry = new Entry('hi', 0, 0, null, `${tree.root}hello.txt`);
+          tree.addEntries([entry]);
+        });
+
+        it('is idempotent files added this session', function() {
+          let old = fs.statSync(tree.root + 'hi');
+          let oldTarget = fs.readLinkSync(tree.root + 'hi');
+
+          tree.symlinkSync(`${tree.root}hello.txt`, 'hi');
+
+          let current = fs.statSync(tree.root + 'hi');
+
+          expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
+          expect(old).to.have.property('mode', current.mode);
+          expect(old).to.have.property('size', current.size);
+          expect(tree.changes()).to.eql([]);
+        });
+
+        it('is idempotent across session', function() {
+          tree.symlinkSync(`${tree.root}hello.txt`, 'hejsan');
+          let changes = tree.changes();
+
+          expect(changes).to.have.deep.property('0.0', 'link');
+          expect(changes).to.have.deep.property('0.1', 'hejsan');
+          expect(changes).to.have.deep.property('0.2.relativePath', 'hejsan');
+          // expect(changes).to.have.deep.property('0.2.checksum', md5hex('new file'));
+          expect(changes).to.have.deep.property('0.2.mode', 0);
+          expect(changes).to.have.deep.property('0.2.mtime');
+
+          let oldmtime = changes[0][2].mtime;
+          expect(changes).to.have.property('length', 1);
+
+          let old = fs.statSync(tree.root + 'hejsan');
+
+          tree.symlinkSync(`${tree.root}hello.txt`, 'hejsan');
+
+          let current = fs.statSync(tree.root + 'hejsan');
+
+          expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
+          expect(old).to.have.property('mode', current.mode);
+          expect(old).to.have.property('size', current.size);
+
+          changes = tree.changes();
+          expect(changes).to.have.deep.property('0.0', 'link');
+          expect(changes).to.have.deep.property('0.1', 'hejsan');
+          expect(changes).to.have.deep.property('0.2.relativePath', 'hejsan');
+          // expect(changes).to.have.deep.property('0.2.checksum', md5hex('new file'));
+          expect(changes).to.have.deep.property('0.2.mode', 0);
+          expect(changes).to.have.deep.property('0.2.mtime', oldmtime);
+          expect(changes).to.have.property('length', 1);
+
+          tree.stop();
+          tree.start();
+          expect(tree.changes()).to.eql([]);
+        });
+      });
+    });
+
     describe('.unlinkSync', function() {
       describe('start/stop', function() {
         it('does error when stopped', function() {
