@@ -1313,34 +1313,34 @@ describe('FSTree', function() {
       })
     });
 
-    describe.only('.symlinkSync', function() {
+    describe('.symlinkSync', function() {
       it('symlinks files', function() {
         expect(tree.changes()).to.eql([]);
 
-        expect(tree.symlinkSync('/tmp/some-kinda-target', 'my-link'));
+        expect(tree.symlinkSync(`${tree.root}hello.txt`, 'my-link'));
 
         let changes = tree.changes();
 
-        expect(changes).to.have.deep.property('0.0', 'link');
+        expect(changes).to.have.deep.property('0.0', 'create');
         expect(changes).to.have.deep.property('0.1', 'my-link');
         expect(changes).to.have.deep.property('0.2.relativePath', 'my-link');
         expect(changes).to.have.deep.property('0.2.mode', 0);
         expect(changes).to.have.deep.property('0.2.mtime');
         expect(changes).to.have.property('length', 1);
 
-        expect(tree.readlinkSync('my-link')).to.eql('/tmp/some-kinda-target');
+        expect(tree.readFileSync('my-link', 'UTF8')).to.eql('Hello, World!\n');
       });
 
       describe('idempotent', function() {
         beforeEach(function() {
           fs.symlinkSync(`${tree.root}hello.txt`, `${tree.root}hi`);
-          let entry = new Entry('hi', 0, 0, null, `${tree.root}hello.txt`);
+          let stat = fs.statSync(`${tree.root}hi`);
+          let entry = new Entry('hi', stat.size, stat.mtime, stat.mode, `${tree.root}hello.txt`);
           tree.addEntries([entry]);
         });
 
         it('is idempotent files added this session', function() {
           let old = fs.statSync(tree.root + 'hi');
-          let oldTarget = fs.readLinkSync(tree.root + 'hi');
 
           tree.symlinkSync(`${tree.root}hello.txt`, 'hi');
 
@@ -1356,10 +1356,9 @@ describe('FSTree', function() {
           tree.symlinkSync(`${tree.root}hello.txt`, 'hejsan');
           let changes = tree.changes();
 
-          expect(changes).to.have.deep.property('0.0', 'link');
+          expect(changes).to.have.deep.property('0.0', 'create');
           expect(changes).to.have.deep.property('0.1', 'hejsan');
           expect(changes).to.have.deep.property('0.2.relativePath', 'hejsan');
-          // expect(changes).to.have.deep.property('0.2.checksum', md5hex('new file'));
           expect(changes).to.have.deep.property('0.2.mode', 0);
           expect(changes).to.have.deep.property('0.2.mtime');
 
@@ -1377,10 +1376,9 @@ describe('FSTree', function() {
           expect(old).to.have.property('size', current.size);
 
           changes = tree.changes();
-          expect(changes).to.have.deep.property('0.0', 'link');
+          expect(changes).to.have.deep.property('0.0', 'create');
           expect(changes).to.have.deep.property('0.1', 'hejsan');
           expect(changes).to.have.deep.property('0.2.relativePath', 'hejsan');
-          // expect(changes).to.have.deep.property('0.2.checksum', md5hex('new file'));
           expect(changes).to.have.deep.property('0.2.mode', 0);
           expect(changes).to.have.deep.property('0.2.mtime', oldmtime);
           expect(changes).to.have.property('length', 1);
@@ -1390,6 +1388,29 @@ describe('FSTree', function() {
           expect(tree.changes()).to.eql([]);
         });
       });
+
+      describe('update', function() {
+        it('tracks and correctly updates a file -> file', function() {
+          tree.symlinkSync(`${tree.root}hello.txt`, 'hi');
+          let old = fs.statSync(`${tree.root}hi`);
+          tree.writeFileSync('hi', 'new different content');
+
+          let current = fs.statSync(`${tree.root}hi`);
+
+          expect(old).to.have.property('mtime');
+          expect(old).to.have.property('mode', current.mode);
+          expect(old).to.have.property('size', 14);
+
+          let changes = tree.changes();
+
+          expect(changes).to.have.deep.property('0.0', 'change');
+          expect(changes).to.have.deep.property('0.1', 'hi');
+          expect(changes).to.have.deep.property('0.2.relativePath', 'hi');
+          expect(changes).to.have.deep.property('0.2.mode', 0);
+          expect(changes).to.have.deep.property('0.2.mtime');
+          expect(changes).to.have.property('length', 1);
+        });
+      })
     });
 
     describe('.unlinkSync', function() {
