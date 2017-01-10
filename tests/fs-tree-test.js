@@ -10,6 +10,7 @@ const context = describe;
 const defaultIsEqual = FSTree.defaultIsEqual;
 const md5hex = require('md5hex');
 const fixturify = require('fixturify');
+const rimraf = require('rimraf');
 
 const isDirectory = Entry.isDirectory;
 
@@ -18,6 +19,8 @@ require('chai').config.truncateThreshold = 0;
 let fsTree;
 
 describe('FSTree', function() {
+  let ROOT = path.resolve('tmp/fs-test-root/');
+
   function merge(x, y) {
     let result = {};
 
@@ -1060,9 +1063,9 @@ describe('FSTree', function() {
 
   describe('fs', function() {
     let tree;
-    let ROOT = path.resolve('tmp/fs-test-root/');
 
     beforeEach(function() {
+      rimraf.sync(ROOT);
       fs.mkdirpSync(ROOT);
 
       fixturify.writeSync(ROOT, {
@@ -1071,8 +1074,8 @@ describe('FSTree', function() {
       });
 
       tree = new FSTree({
-        entries: walkSync.entries(__dirname + '/fixtures'),
-        root: ROOT
+        entries: walkSync.entries(ROOT),
+        root: ROOT,
       });
     });
 
@@ -1195,12 +1198,6 @@ describe('FSTree', function() {
     });
 
     describe('.writeFileSync', function() {
-      afterEach(function() {
-        try {
-          fs.unlinkSync(__dirname +'/fixtures/new-file.txt');
-        } catch(e) { }
-      });
-
       describe('start/stop', function() {
         afterEach(function() {
           tree.start();
@@ -1232,6 +1229,12 @@ describe('FSTree', function() {
         expect(changes).to.have.property('length', 1);
 
         expect(tree.readFileSync('new-file.txt', 'UTF8')).to.eql('new file');
+
+        expect(tree.entries.map(e => e.relativePath)).to.eql([
+          'hello.txt',
+          'my-directory/',
+          'new-file.txt',
+        ]);
       });
 
       describe('idempotent', function() {
@@ -1247,6 +1250,11 @@ describe('FSTree', function() {
           expect(old).to.have.property('mode', current.mode);
           expect(old).to.have.property('size', current.size);
           expect(tree.changes()).to.eql([]);
+
+          expect(tree.entries.map(e => e.relativePath)).to.eql([
+            'hello.txt',
+            'my-directory/',
+          ]);
         });
 
         it('is idempotent across session', function() {
@@ -1259,6 +1267,13 @@ describe('FSTree', function() {
           expect(changes).to.have.deep.property('0.2.checksum', md5hex('new file'));
           expect(changes).to.have.deep.property('0.2.mode', 0);
           expect(changes).to.have.deep.property('0.2.mtime');
+
+
+          expect(tree.entries.map(e => e.relativePath)).to.eql([
+            'hello.txt',
+            'my-directory/',
+            'new-file.txt',
+          ]);
 
           let oldmtime = changes[0][2].mtime;
           expect(changes).to.have.property('length', 1);
@@ -1281,6 +1296,12 @@ describe('FSTree', function() {
           expect(changes).to.have.deep.property('0.2.mode', 0);
           expect(changes).to.have.deep.property('0.2.mtime', oldmtime);
           expect(changes).to.have.property('length', 1);
+
+          expect(tree.entries.map(e => e.relativePath)).to.eql([
+            'hello.txt',
+            'my-directory/',
+            'new-file.txt',
+          ]);
 
           tree.stop();
           tree.start();
@@ -1309,8 +1330,14 @@ describe('FSTree', function() {
           expect(changes).to.have.deep.property('0.2.mode', 0);
           expect(changes).to.have.deep.property('0.2.mtime');
           expect(changes).to.have.property('length', 1);
+
+          expect(tree.entries.map(e => e.relativePath)).to.eql([
+            'hello.txt',
+            'my-directory/',
+            'new-file.txt',
+          ]);
         });
-      })
+      });
     });
 
     describe('.symlinkSync', function() {
@@ -1329,19 +1356,22 @@ describe('FSTree', function() {
         expect(changes).to.have.property('length', 1);
 
         expect(tree.readFileSync('my-link', 'UTF8')).to.eql('Hello, World!\n');
+
+        expect(tree.entries.map(e => e.relativePath)).to.eql([
+          'hello.txt',
+          'my-directory/',
+          'my-link',
+        ]);
       });
 
       describe('idempotent', function() {
-        beforeEach(function() {
+        it('is idempotent files added this session', function() {
           fs.symlinkSync(`${tree.root}hello.txt`, `${tree.root}hi`);
           let stat = fs.statSync(`${tree.root}hi`);
           let entry = new Entry('hi', stat.size, stat.mtime, stat.mode, `${tree.root}hello.txt`);
           tree.addEntries([entry]);
-        });
 
-        it('is idempotent files added this session', function() {
           let old = fs.statSync(tree.root + 'hi');
-
           tree.symlinkSync(`${tree.root}hello.txt`, 'hi');
 
           let current = fs.statSync(tree.root + 'hi');
@@ -1350,6 +1380,12 @@ describe('FSTree', function() {
           expect(old).to.have.property('mode', current.mode);
           expect(old).to.have.property('size', current.size);
           expect(tree.changes()).to.eql([]);
+
+          expect(tree.entries.map(e => e.relativePath)).to.eql([
+            'hello.txt',
+            'hi',
+            'my-directory/',
+          ]);
         });
 
         it('is idempotent across session', function() {
@@ -1361,6 +1397,12 @@ describe('FSTree', function() {
           expect(changes).to.have.deep.property('0.2.relativePath', 'hejsan');
           expect(changes).to.have.deep.property('0.2.mode', 0);
           expect(changes).to.have.deep.property('0.2.mtime');
+
+          expect(tree.entries.map(e => e.relativePath)).to.eql([
+            'hejsan',
+            'hello.txt',
+            'my-directory/',
+          ]);
 
           let oldmtime = changes[0][2].mtime;
           expect(changes).to.have.property('length', 1);
@@ -1382,6 +1424,12 @@ describe('FSTree', function() {
           expect(changes).to.have.deep.property('0.2.mode', 0);
           expect(changes).to.have.deep.property('0.2.mtime', oldmtime);
           expect(changes).to.have.property('length', 1);
+
+          expect(tree.entries.map(e => e.relativePath)).to.eql([
+            'hejsan',
+            'hello.txt',
+            'my-directory/',
+          ]);
 
           tree.stop();
           tree.start();
@@ -1409,11 +1457,58 @@ describe('FSTree', function() {
           expect(changes).to.have.deep.property('0.2.mode', 0);
           expect(changes).to.have.deep.property('0.2.mtime');
           expect(changes).to.have.property('length', 1);
+
+          expect(tree.entries.map(e => e.relativePath)).to.eql([
+            'hello.txt',
+            'hi',
+            'my-directory/',
+          ]);
         });
       })
     });
 
-    describe('.unlinkSync', function() {
+    describe.only('.unlinkSync', function() {
+      it('removes files', function() {
+        tree.unlinkSync('hello.txt');
+
+        let changes = tree.changes();
+
+        expect(changes).to.have.deep.property('0.0', 'unlink');
+        expect(changes).to.have.deep.property('0.1', 'hello.txt');
+        expect(changes).to.have.deep.property('0.2.relativePath', 'hello.txt');
+        expect(changes).to.have.deep.property('0.2.mode');
+        expect(changes).to.have.deep.property('0.2.mtime');
+        expect(changes).to.have.property('length', 1);
+
+        expect(tree.entries.map(e => e.relativePath)).to.eql([
+          'my-directory/',
+        ]);
+      });
+
+      it('removes symlinked directories', function() {
+        tree.symlinkSync(`${tree.root}my-directory`, 'linked-dir');
+
+        // this test is uninterested in the symlink changes
+        tree.stop();
+        tree.start();
+
+        tree.unlinkSync('linked-dir');
+
+        let changes = tree.changes();
+
+        expect(changes).to.have.deep.property('0.0', 'unlink');
+        expect(changes).to.have.deep.property('0.1', 'linked-dir');
+        expect(changes).to.have.deep.property('0.2.relativePath', 'linked-dir');
+        expect(changes).to.have.deep.property('0.2.mode');
+        expect(changes).to.have.deep.property('0.2.mtime');
+        expect(changes).to.have.property('length', 1);
+
+        expect(tree.entries.map(e => e.relativePath)).to.eql([
+          'hello.txt',
+          'my-directory/',
+        ]);
+      });
+
       describe('start/stop', function() {
         it('does error when stopped', function() {
           tree.stop();
@@ -1428,6 +1523,23 @@ describe('FSTree', function() {
     });
 
     describe('.rmdirSync', function() {
+      it('removes directories', function() {
+        tree.rmdirSync('my-directory');
+
+        let changes = tree.changes();
+
+        expect(changes).to.have.deep.property('0.0', 'rmdir');
+        expect(changes).to.have.deep.property('0.1', 'my-directory');
+        expect(changes).to.have.deep.property('0.2.relativePath', 'my-directory');
+        expect(changes).to.have.deep.property('0.2.mode');
+        expect(changes).to.have.deep.property('0.2.mtime');
+        expect(changes).to.have.property('length', 1);
+
+        expect(tree.entries.map(e => e.relativePath)).to.eql([
+          'hello.txt',
+        ]);
+      });
+
       describe('start/stop', function() {
         it('does error when stopped', function() {
           tree.stop();
@@ -1463,6 +1575,12 @@ describe('FSTree', function() {
 
         expect(tree.statSync('new-directory/')).to.eql(entry);
         expect(tree.statSync('new-directory')).to.eql(entry);
+
+        expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
+          'hello.txt',
+          'my-directory/',
+          'new-directory',
+        ]);
       });
 
       it('directory/ -> directory/ (idempotence)', function testDir2Dir() {
@@ -1476,6 +1594,11 @@ describe('FSTree', function() {
         expect(old).to.have.property('mode', current.mode);
         expect(old).to.have.property('size', current.size);
         expect(tree.changes()).to.eql([]);
+
+        expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
+          'hello.txt',
+          'my-directory/',
+        ]);
       });
 
       it('directory/ -> directory (idempotence, path normalization)', function () {
@@ -1489,6 +1612,11 @@ describe('FSTree', function() {
         expect(old).to.have.property('mode', current.mode);
         expect(old).to.have.property('size', current.size);
         expect(tree.changes()).to.eql([]);
+
+        expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
+          'hello.txt',
+          'my-directory/',
+        ]);
       });
 
       // describe('file -> directory (error)');
@@ -1511,9 +1639,15 @@ describe('FSTree', function() {
     let tree;
 
     beforeEach(function() {
+
+      fixturify.writeSync(ROOT, {
+        'hello.txt': "Hello, World!\n",
+        'my-directory': {},
+      });
+
       tree = new FSTree({
-        entries: walkSync.entries(__dirname + '/fixtures'),
-        root: __dirname + '/fixtures/'
+        entries: walkSync.entries(ROOT),
+        root: ROOT
       });
 
       tree.writeFileSync('omg.js', 'hi');
