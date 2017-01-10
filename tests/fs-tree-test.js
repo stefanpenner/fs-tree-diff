@@ -1467,7 +1467,7 @@ describe('FSTree', function() {
       })
     });
 
-    describe.only('.unlinkSync', function() {
+    describe('.unlinkSync', function() {
       it('removes files', function() {
         tree.unlinkSync('hello.txt');
 
@@ -1530,7 +1530,7 @@ describe('FSTree', function() {
 
         expect(changes).to.have.deep.property('0.0', 'rmdir');
         expect(changes).to.have.deep.property('0.1', 'my-directory');
-        expect(changes).to.have.deep.property('0.2.relativePath', 'my-directory');
+        expect(changes).to.have.deep.property('0.2.relativePath', 'my-directory/');
         expect(changes).to.have.deep.property('0.2.mode');
         expect(changes).to.have.deep.property('0.2.mtime');
         expect(changes).to.have.property('length', 1);
