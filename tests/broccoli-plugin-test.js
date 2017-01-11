@@ -46,7 +46,7 @@ Object.defineProperty(NewPlugin.prototype, 'in', {
       var inputPath = this.inputPaths[0];
       var entries = walkSync.entries(inputPath, this.inputWalkOptions);
       tree = this._lastInTree = FSTree.fromEntries(entries, { root: inputPath });
-      tree._changes = lastTree.calculatePatch(tree);
+      tree.__changes = lastTree.calculatePatch(tree);
     }
 
     return this._in || (this._in = tree);

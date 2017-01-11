@@ -625,9 +625,13 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
-    describe.only('chdir', function() {
+    describe('chdir', function() {
       it('throws if the path is to a file', function() {
-        expect('this thing is tested').to.equal(true);
+        expect(function() {
+          tree.chdir('hello.txt');
+        }).to.throw('ENOTDIR: not a directory, hello.txt');
+
+        tree.chdir('my-directory');
       });
 
       it('returns a new tree', function() {
@@ -642,11 +646,17 @@ describe('FSTree fs abstraction', function() {
 
       describe('when path does not exist', function() {
         it('throws without allowEmpty: true', function() {
-          expect('this thing is tested').to.equal(true);
+          expect(function() {
+            tree.chdir('pretty-sure-this-dir-doesnt-exist');
+          }).to.throw('ENOENT: no such file or directory, pretty-sure-this-dir-doesnt-exist');
+
+          tree.chdir('my-directory');
         });
 
         it('does not throw with allowEmpty true', function() {
-          expect('this thing is tested').to.equal(true);
+          expect(function() {
+            tree.chdir('pretty-sure-this-dir-doesnt-exist', { allowEmpty: true });
+          }).to.not.throw();
         });
       });
 
@@ -768,12 +778,6 @@ describe('FSTree fs abstraction', function() {
           ]);
         });
       });
-
-      describe('start/stop', function() {
-        it('throws if stopped', function() {
-          expect('this thing is tested').to.equal(true);
-        });
-      });
     });
   });
 
@@ -815,8 +819,7 @@ describe('FSTree fs abstraction', function() {
 
 
     describe('order', function() {
-      it('has tests', function() {
-        expect('changes.order is tested').to.equal(true);
+      it.skip('has tests', function() {
       });
       // test changes are ordered:
       // 1. addtions/updates lexicographicaly
@@ -841,6 +844,7 @@ describe('FSTree fs abstraction', function() {
     })
 
     it('ignores nothing, if all match', function() {
+      debugger;
       let matched = tree.match({ include: ['**/*.js'] });
 
       expect(matched).to.have.property('length', 8);
