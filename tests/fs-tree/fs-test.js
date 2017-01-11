@@ -126,6 +126,12 @@ describe('FSTree fs abstraction', function() {
         expect(entry).to.have.property('size');
         expect(entry).to.have.property('mtime');
       });
+
+      it('normalizes paths', function() {
+        expect(tree.findByRelativePath('my-directory/').index).to.be.gt(-1);
+        expect(tree.findByRelativePath('my-directory/.').index).to.be.gt(-1);
+        expect(tree.findByRelativePath('my-directory/foo/..').index).to.be.gt(-1);
+      });
     });
 
     it('ensures trailing slash for root', function() {
@@ -664,6 +670,12 @@ describe('FSTree fs abstraction', function() {
     });
 
     describe('.existsSync', function() {
+      it('returns true for paths that resolve to the root dir', function() {
+        expect(tree.existsSync('')).to.eql(true);
+        expect(tree.existsSync('.')).to.eql(true);
+        expect(tree.existsSync('my-directory/..')).to.eql(true);
+      });
+
       it('returns true if the path exists', function() {
         expect(tree.existsSync('hello.txt')).to.eql(true);
         expect(tree.existsSync('my-directory')).to.eql(true);
@@ -687,7 +699,6 @@ describe('FSTree fs abstraction', function() {
           root: ROOT,
         });
 
-        debugger;
         expect(treeWithLinks.existsSync('broken-symlink')).to.eql(false);
         expect(treeWithLinks.existsSync('pretty-legit-symlink')).to.eql(true);
       });
