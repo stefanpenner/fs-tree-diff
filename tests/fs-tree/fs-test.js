@@ -625,6 +625,74 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
+    describe('.resolvePath', function() {
+      it('resolves the empty string', function() {
+        expect(tree.resolvePath('')).to.eql(ROOT);
+      });
+
+      it('resolves .', function() {
+        expect(tree.resolvePath('')).to.eql(ROOT);
+      });
+
+      it('resolves paths that exist', function() {
+        expect(tree.resolvePath('my-directory')).to.eql(`${ROOT}/my-directory`);
+      });
+
+      it('resolves paths that do not exist', function() {
+        expect(tree.resolvePath('narnia')).to.eql(`${ROOT}/narnia`);
+      });
+
+      it('resolves paths with ..', function() {
+        expect(tree.resolvePath('my-directory/uwot/../..')).to.eql(ROOT);
+      });
+
+      it('throws for paths that escape root', function() {
+        expect(function() {
+          tree.resolvePath('..')
+        }).to.throw(`Invalid path: '..' not within root '${ROOT}/'`);
+      });
+
+      it('throws for paths within a chdir that escape root', function() {
+        let myDir = tree.chdir('my-directory');
+
+        expect(myDir.resolvePath('..')).to.eql(ROOT);
+
+        expect(function() {
+          myDir.resolvePath('../../');
+        }).to.throw(`Invalid path: '../../' not within dir 'my-directory/' of root '${ROOT}/'`);
+      });
+    });
+
+    describe('.existsSync', function() {
+      it('returns true if the path exists', function() {
+        expect(tree.existsSync('hello.txt')).to.eql(true);
+        expect(tree.existsSync('my-directory')).to.eql(true);
+      });
+
+      it('returns false if the path does not exist', function() {
+        expect(tree.existsSync('pretty-sure-this-isnt-real')).to.eql(false);
+        expect(tree.existsSync('my-directory/still-not-real')).to.eql(false);
+      });
+
+      // We care about this for now while we're still writing symlinks.  When we
+      // actually take advantage of our change tracking, we may not need this,
+      // except possibly for the initial state (eg where app is a symlink or
+      // perhaps more realistically something within node_modules)
+      it('follows symlinks', function() {
+        fs.symlinkSync(`${ROOT}/this-dir-isnt-real`, `${ROOT}/broken-symlink`);
+        fs.symlinkSync(`${ROOT}/hello.txt`, `${ROOT}/pretty-legit-symlink`);
+
+        let treeWithLinks = new FSTree({
+          entries: walkSync.entries(ROOT),
+          root: ROOT,
+        });
+
+        debugger;
+        expect(treeWithLinks.existsSync('broken-symlink')).to.eql(false);
+        expect(treeWithLinks.existsSync('pretty-legit-symlink')).to.eql(true);
+      });
+    });
+
     describe('chdir', function() {
       it('throws if the path is to a file', function() {
         expect(function() {
@@ -674,6 +742,14 @@ describe('FSTree fs abstraction', function() {
 
           let stat = newTree.statSync('ohai.txt');
           expect(stat).to.have.property('relativePath', 'my-directory/ohai.txt');
+        });
+
+        it('is respected by existsSync', function() {
+          expect(tree.existsSync('ohai.txt')).to.equal(false);
+
+          let newTree = tree.chdir('my-directory');
+
+          expect(newTree.existsSync('ohai.txt')).to.equal(true);
         });
 
         it('is respected by readFileSync', function() {
