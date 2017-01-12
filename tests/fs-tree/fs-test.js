@@ -721,6 +721,7 @@ describe('FSTree fs abstraction', function() {
         tree.writeFileSync('my-directory/ohai.txt', 'hi');
         tree.writeFileSync('my-directory/again.txt', 'hello');
         tree.writeFileSync('my-directory/subdir/sup.txt', 'guten tag');
+        tree.writeFileSync('my-directory.annoying-file', 'better test this');
 
         tree.stop();
         tree.start();
@@ -750,6 +751,7 @@ describe('FSTree fs abstraction', function() {
         expect(tree.readdirSync('./')).to.eql([
           'hello.txt',
           'my-directory',
+          'my-directory.annoying-file'
         ]);
       });
     });
