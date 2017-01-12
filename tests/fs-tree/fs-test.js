@@ -819,6 +819,48 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
+    describe('.walkPaths', function() {
+      it('returns the paths for all entries', function() {
+        expect(tree.walkPaths()).to.eql([
+          'hello.txt',
+          'my-directory/',
+        ]);
+      });
+
+      it('respects cwd', function() {
+        expect(tree.chdir('my-directory').walkPaths()).to.eql([]);
+      });
+
+      it('respects filters', function() {
+        expect(tree.filtered({
+          include: ['*.txt']
+        }).walkPaths()).to.eql([
+          'hello.txt',
+        ]);
+      });
+    });
+
+    describe('.walkEntries', function() {
+      it('returns all entries', function() {
+        expect(tree.walkEntries().map(e => e.relativePath)).to.eql([
+          'hello.txt',
+          'my-directory/',
+        ]);
+      });
+
+      it('respects cwd', function() {
+        expect(tree.chdir('my-directory').walkEntries()).to.eql([]);
+      });
+
+      it('respects filters', function() {
+        expect(tree.filtered({
+          include: ['*.txt']
+        }).walkEntries().map(e => e.relativePath)).to.eql([
+          'hello.txt',
+        ]);
+      });
+    });
+
     describe('chdir', function() {
       it('throws if the path is to a file', function() {
         expect(function() {
@@ -835,7 +877,7 @@ describe('FSTree fs abstraction', function() {
         expect(result._parent).to.equal(tree);
 
         expect(result.root).to.equal(tree.root);
-        expect(result._projection.cwd).to.equal('my-directory/');
+        expect(result.cwd).to.equal('my-directory/');
       });
 
       describe('when path does not exist', function() {
@@ -1002,6 +1044,32 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
+    describe('.filtered', function() {
+      it('returns a new tree with filters set', function() {
+        expect(tree.include).to.eql([]);
+        expect(tree.exclude).to.eql([]);
+        expect(tree.files).to.eql([]);
+        expect(tree.cwd).to.eql('');
+
+        expect(tree.filtered({ include: ['*.js'] }).include).to.eql(['*.js']);
+        expect(tree.filtered({ exclude: ['*.js'] }).exclude).to.eql(['*.js']);
+        expect(tree.filtered({ files: ['foo.js'] }).files).to.eql(['foo.js']);
+        expect(tree.filtered({ cwd: 'my-directory' }).cwd).to.eql('my-directory');
+
+        let projection = tree.filtered({
+          include: ['*.js'],
+          exclude: ['*.css'],
+          cwd: 'my-directory',
+        });
+
+        expect(projection._parent).to.equal(tree);
+
+        expect(projection.include).to.eql(['*.js']);
+        expect(projection.exclude).to.eql(['*.css']);
+        expect(projection.cwd).to.eql('my-directory');
+      });
+    });
+
     describe('._hasEntries', function() {
       it('sets _hasEntries to true if entries are specified', function() {
         expect(new FSTree({
@@ -1113,6 +1181,100 @@ describe('FSTree fs abstraction', function() {
     });
   });
 
+  describe('projection', function() {
+    let tree;
+
+    beforeEach(function() {
+      rimraf.sync(ROOT);
+      fs.mkdirpSync(ROOT);
+
+      fixturify.writeSync(ROOT, {
+        'hello.txt': "Hello, World!\n",
+        'goodbye.txt': 'Goodbye, World\n',
+        'a': {
+          'foo': {
+            'one.js': '',
+            'one.css': '',
+            'two.js': '',
+            'two.css': '',
+          },
+          'bar': {
+            'two.js': '',
+            'two.css': '',
+            'three.js': '',
+            'three.css': '',
+          }
+        },
+        'b': {},
+      });
+
+      tree = new FSTree({
+        entries: walkSync.entries(ROOT),
+        root: ROOT,
+      });
+    });
+
+    afterEach(function() {
+      fs.removeSync(ROOT);
+    });
+
+    describe('files', function() {
+      it('returns only matching files', function() {
+        let filter = { files: ['hello.txt', 'a/foo/two.js', 'a/bar'] };
+
+        // funnel will cp -r if files:[ 'path/to/dir/' ]
+        // so this is semantically different, but i don't think it's actually
+        // public API for files to contain a path to a dir
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'a/bar/',
+          'a/foo/two.js',
+          'hello.txt',
+        ]);
+      });
+
+      it.only('respects cwd', function() {
+        let filter = { cwd: 'a/foo', files: ['one.js', 'two.css'] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'one.js',
+          'two.css',
+        ]);
+      });
+
+      it('is incompatible with include', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+
+      it('is incompatible with exclude', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+    });
+
+    describe('include', function() {
+      it('returns matching files', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+
+      it('respects cwd', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+    });
+
+    describe('exclude', function() {
+      it('hides matching files', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+
+      it('respects cwd', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+
+      it('takes precedence over include', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+    });
+  });
+
   describe('changes', function() {
     let tree;
 
@@ -1149,7 +1311,11 @@ describe('FSTree fs abstraction', function() {
       expect(tree.changes({ include: ['NO-MATCH'] })).to.have.property('length', 0);
     });
 
-    it.skip('hides changes if they are outside of cwd', function() {
+    it('hides changes if they are outside of cwd', function() {
+      expect('this thing is tested').to.equal(true);
+    });
+
+    it('hides changes if they do not match the projection', function() {
       expect('this thing is tested').to.equal(true);
     });
 
