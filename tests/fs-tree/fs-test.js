@@ -60,9 +60,7 @@ describe('FSTree fs abstraction', function() {
       let childTree;
 
       beforeEach(function() {
-        childTree = new FSTree({
-          parent: tree
-        });
+        childTree = FSTree.fromParent(tree);
       });
 
       it('shares entries', function() {
@@ -71,6 +69,57 @@ describe('FSTree fs abstraction', function() {
 
       it('shares changes', function() {
         expect(childTree._changes).to.equal(tree._changes);
+      });
+
+      it('shares _state', function() {
+        expect(tree._state).to.eql('started');
+        expect(childTree._state).to.eql('started');
+
+        tree.stop();
+
+        expect(tree._state).to.eql('stopped');
+        expect(childTree._state).to.eql('stopped');
+
+        childTree.start();
+
+        expect(tree._state).to.eql('started');
+        expect(childTree._state).to.eql('started');
+      });
+
+      it('shares _hasEntries and can populate from parent', function() {
+        let lazyTree = new FSTree({
+          entries: null,
+          root: ROOT,
+        });
+        let childTree = new FSTree({
+          parent: lazyTree,
+        });
+
+        expect(lazyTree._hasEntries).to.eql(false);
+        expect(childTree._hasEntries).to.eql(false);
+
+        lazyTree._ensureEntriesPopulated();
+
+        expect(lazyTree._hasEntries).to.eql(true);
+        expect(childTree._hasEntries).to.eql(true);
+        expect(childTree.entries).to.equal(lazyTree.entries);
+      });
+
+      it('shares _hasEntries and can populate from child', function() {
+        let lazyTree = new FSTree({
+          entries: null,
+          root: ROOT,
+        });
+        let childTree = FSTree.fromParent(lazyTree);
+
+        expect(lazyTree._hasEntries).to.eql(false);
+        expect(childTree._hasEntries).to.eql(false);
+
+        childTree._ensureEntriesPopulated();
+
+        expect(lazyTree._hasEntries).to.eql(true);
+        expect(childTree._hasEntries).to.eql(true);
+        expect(childTree.entries).to.equal(lazyTree.entries);
       });
     });
 
@@ -754,6 +803,20 @@ describe('FSTree fs abstraction', function() {
           'my-directory.annoying-file'
         ]);
       });
+
+      it('chomps trailing / in returned dirs', function() {
+        // reset entries via walksync so that subdir has a trailing slash
+        let newTree = new FSTree({
+          root: ROOT,
+          entries: walkSync.entries(ROOT),
+        });
+
+        expect(newTree.readdirSync('my-directory')).to.eql([
+          'again.txt',
+          'ohai.txt',
+          'subdir',
+        ]);
+      });
     });
 
     describe('chdir', function() {
@@ -935,6 +998,116 @@ describe('FSTree fs abstraction', function() {
 
           expect(newTree.match({ include: ['*'] }).map(e => e.relativePath)).to.eql([
           ]);
+        });
+      });
+    });
+
+    describe('._hasEntries', function() {
+      it('sets _hasEntries to true if entries are specified', function() {
+        expect(new FSTree({
+          entries: [],
+          root: ROOT,
+        })._hasEntries).to.eql(true);
+      });
+
+      it('sets _hasEntries to false if no entries are specified', function() {
+        expect(new FSTree({
+          entries: null,
+          root: ROOT,
+        })._hasEntries).to.eql(false);
+      });
+
+      describe('when entries are not initially read', function() {
+        let lazyTree;
+
+        beforeEach(function() {
+          lazyTree = new FSTree({
+            entries: null,
+            root: ROOT,
+          })
+        });
+
+        it('lazily populates entries for statSync', function() {
+          expect(lazyTree.statSync('hello.txt').relativePath).to.eql('hello.txt');
+          expect(lazyTree._hasEntries).to.eql(true);
+        });
+
+        it('does not lazily populate entries for existsSync', function() {
+          expect(lazyTree.existsSync('genuinely-doesnt-exist')).to.eql(false);
+          expect(lazyTree.existsSync('hello.txt')).to.eql(true);
+          expect(lazyTree._hasEntries).to.eql(false);
+        });
+
+        it('lazily populates entries for readdirSync', function() {
+          expect(lazyTree.readdirSync('.')).to.eql(['hello.txt', 'my-directory']);
+          expect(lazyTree.readdirSync('my-directory')).to.eql([]);
+          expect(lazyTree._hasEntries).to.eql(true);
+        });
+
+        // less sure about these ones
+
+        it('lazily populates entries for readFileSync', function() {
+          expect(lazyTree.readFileSync('hello.txt', 'UTF8')).to.eql('Hello, World!\n');
+          expect(lazyTree._hasEntries).to.eql(true);
+        });
+
+        it('lazily populates entries for unlinkSync', function() {
+          lazyTree.unlinkSync('hello.txt');
+          expect(lazyTree.entries.map(e => e.relativePath)).to.eql(['my-directory/']);
+          expect(lazyTree._hasEntries).to.eql(true);
+        });
+
+        it('lazily populates entries for rmdirSync', function() {
+          lazyTree.rmdirSync('my-directory');
+          expect(lazyTree.entries.map(e => e.relativePath)).to.eql(['hello.txt']);
+          expect(lazyTree._hasEntries).to.eql(true);
+        });
+
+        it('lazily populates entries for mkdirSync', function() {
+          lazyTree.mkdirSync('new-dir');
+          expect(lazyTree.entries.map(e => e.relativePath)).to.eql([
+            'hello.txt',
+            'my-directory/',
+            'new-dir',
+          ]);
+          expect(lazyTree._hasEntries).to.eql(true);
+        });
+
+        it('lazily populates entries for writeFileSync', function() {
+          lazyTree.writeFileSync('new-file.txt', 'hai again');
+          expect(lazyTree.entries.map(e => e.relativePath)).to.eql([
+            'hello.txt',
+            'my-directory/',
+            'new-file.txt',
+          ]);
+          expect(lazyTree._hasEntries).to.eql(true);
+        });
+
+        it('lazily populates entries for symlinkSync', function() {
+          lazyTree.symlinkSync(`${ROOT}/hello.txt`, 'hi.txt');
+          expect(lazyTree.entries.map(e => e.relativePath)).to.eql([
+            'hello.txt',
+            'hi.txt',
+            'my-directory/',
+          ]);
+          expect(lazyTree._hasEntries).to.eql(true);
+        });
+
+        it('is idempotent (does not populate entries twice)', function() {
+          expect(lazyTree._hasEntries).to.eql(false);
+          expect(lazyTree.entries.map(e => e.relativePath)).to.eql([]);
+
+          lazyTree._ensureEntriesPopulated();
+
+          expect(lazyTree._hasEntries).to.eql(true);
+          expect(lazyTree.entries.map(e => e.relativePath)).to.eql(['hello.txt', 'my-directory/']);
+
+          rimraf.sync(ROOT);
+
+          lazyTree._ensureEntriesPopulated();
+
+          expect(lazyTree._hasEntries).to.eql(true);
+          expect(lazyTree.entries.map(e => e.relativePath)).to.eql(['hello.txt', 'my-directory/']);
         });
       });
     });
