@@ -6,6 +6,7 @@ const util = require('../lib/util');
 const treeOptionHelpers = require('../lib/tree-option-helpers');
 
 const entryRelativePath = util.entryRelativePath;
+const lchompPathStart = util.lchompPathStart;
 const commonPrefix = util.commonPrefix;
 const basename = util.basename;
 const computeImpliedEntries = treeOptionHelpers.computeImpliedEntries;
@@ -27,7 +28,7 @@ describe('util', function() {
     Date.now = originalNow;
   });
 
-  describe('commonPrefix', function() {
+  describe('.commonPrefix', function() {
     it('computes no common prefix if none exists', function() {
       expect(commonPrefix('a', 'b')).to.equal('');
     });
@@ -41,7 +42,25 @@ describe('util', function() {
     });
   });
 
-  describe('basename', function() {
+  describe('.lchompPathStart', function() {
+    it('lchomps ./', function() {
+      expect(lchompPathStart('./')).to.eql('');
+    });
+
+    it('lchomps .', function() {
+      expect(lchompPathStart('.')).to.eql('');
+    });
+
+    it('does not lchomp ..', function() {
+      expect(lchompPathStart('..')).to.eql('..');
+    });
+
+    it('does not lchomp ../', function() {
+      expect(lchompPathStart('../')).to.eql('../');
+    });
+  });
+
+  describe('.basename', function() {
     it('computes the basename of files', function() {
       expect(basename(Entry.fromPath('a/b/c'))).to.equal('a/b/');
     });
@@ -51,7 +70,7 @@ describe('util', function() {
     });
   });
 
-  describe('computeImpliedEntries', function() {
+  describe('.computeImpliedEntries', function() {
     it('computes implied entries', function() {
       let entries = computeImpliedEntries('a/b/', 'c/d/e/');
 
@@ -71,7 +90,7 @@ describe('util', function() {
     });
   });
 
-  describe('sortAndExpand', function() {
+  describe('.sortAndExpand', function() {
     it('sorts and expands entries in place', function() {
       let entries = [
         'a/b/q/r/bar.js',
@@ -104,7 +123,7 @@ describe('util', function() {
     });
   });
 
-  describe('entryRelativePath', function() {
+  describe('.entryRelativePath', function() {
     it('strips nothing for file entries', function() {
       expect(entryRelativePath(new Entry('my-path', 0, 0, 0))).to.eql('my-path');
       expect(entryRelativePath(new Entry('my-path/', 0, 0, 0))).to.eql('my-path/');

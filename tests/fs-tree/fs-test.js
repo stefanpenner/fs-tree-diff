@@ -715,7 +715,7 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
-    describe.only('readdirSync', function() {
+    describe('readdirSync', function() {
       beforeEach(function() {
         tree.mkdirSync('my-directory/subdir');
         tree.writeFileSync('my-directory/ohai.txt', 'hi');
