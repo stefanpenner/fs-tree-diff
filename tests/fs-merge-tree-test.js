@@ -38,11 +38,13 @@ describe('FSMergeTree', function() {
 
     it('maps over multipel roots', function() {
       let result = new FSMergeTree({
-        roots: [ROOT + 'foo', ROOT + 'bar']
+        roots: [ROOT + '/foo', ROOT + '/bar']
       }).map((entry, index) => [entry, index])
 
       expect(result.length).to.equal(2);
+      expect(result[0][0].root).to.eql(ROOT + '/foo/');
       expect(result[0][1]).to.eql(0);
+      expect(result[1][0].root).to.eql(ROOT + '/bar/');
       expect(result[1][1]).to.eql(1);
     });
   });
