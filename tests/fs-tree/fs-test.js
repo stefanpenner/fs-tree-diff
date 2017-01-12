@@ -1149,6 +1149,10 @@ describe('FSTree fs abstraction', function() {
       expect(tree.changes({ include: ['NO-MATCH'] })).to.have.property('length', 0);
     });
 
+    it.skip('hides changes if they are outside of cwd', function() {
+      expect('this thing is tested').to.equal(true);
+    });
+
 
     describe('order', function() {
       it.skip('has tests', function() {
@@ -1157,6 +1161,10 @@ describe('FSTree fs abstraction', function() {
       // 1. addtions/updates lexicographicaly
       // 2. removals reverse lexicographicaly
     });
+  });
+
+  describe('', function() {
+    
   });
 
   describe('match', function() {
