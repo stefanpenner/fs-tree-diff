@@ -715,7 +715,7 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
-    describe('readdirSync', function() {
+    describe.only('readdirSync', function() {
       beforeEach(function() {
         tree.mkdirSync('my-directory/subdir');
         tree.writeFileSync('my-directory/ohai.txt', 'hi');
@@ -743,18 +743,13 @@ describe('FSTree fs abstraction', function() {
           'again.txt',
           'ohai.txt',
           'subdir',
-          'subdir/sup.txt',
         ]);
       });
 
       it('returns the contents of root', function() {
         expect(tree.readdirSync('./')).to.eql([
           'hello.txt',
-          'my-directory/',
-          'my-directory/again.txt',
-          'my-directory/ohai.txt',
-          'my-directory/subdir',
-          'my-directory/subdir/sup.txt',
+          'my-directory',
         ]);
       });
     });
