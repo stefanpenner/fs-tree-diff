@@ -704,6 +704,50 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
+    describe('readdirSync', function() {
+      beforeEach(function() {
+        tree.mkdirSync('my-directory/subdir');
+        tree.writeFileSync('my-directory/ohai.txt', 'hi');
+        tree.writeFileSync('my-directory/again.txt', 'hello');
+        tree.writeFileSync('my-directory/subdir/sup.txt', 'guten tag');
+
+        tree.stop();
+        tree.start();
+      });
+
+      it('throws if path is a file', function() {
+        expect(function() {
+          tree.readdirSync('hello.txt');
+        }).to.throw('ENOTDIR: not a directory, hello.txt');
+      });
+
+      it('throws if path does not exist', function() {
+        expect(function() {
+          tree.readdirSync('not-a-real-path');
+        }).to.throw('ENOENT: no such file or directory, not-a-real-path');
+      });
+
+      it('returns the contents of a dir', function() {
+        expect(tree.readdirSync('my-directory')).to.eql([
+          'again.txt',
+          'ohai.txt',
+          'subdir',
+          'subdir/sup.txt',
+        ]);
+      });
+
+      it('returns the contents of root', function() {
+        expect(tree.readdirSync('./')).to.eql([
+          'hello.txt',
+          'my-directory/',
+          'my-directory/again.txt',
+          'my-directory/ohai.txt',
+          'my-directory/subdir',
+          'my-directory/subdir/sup.txt',
+        ]);
+      });
+    });
+
     describe('chdir', function() {
       it('throws if the path is to a file', function() {
         expect(function() {
@@ -827,6 +871,26 @@ describe('FSTree fs abstraction', function() {
           expect(
             fs.readFileSync(`${tree.root}my-directory/hello-again.txt`, 'UTF8')
           ).to.equal('Hello, World!\n');
+        });
+
+        it('is respected by readdirSync', function() {
+          tree.mkdirSync('my-directory/subdir');
+          tree.writeFileSync('my-directory/ohai.txt', 'hi');
+          tree.writeFileSync('my-directory/again.txt', 'hello');
+          tree.writeFileSync('my-directory/subdir/sup.txt', 'guten tag');
+
+          tree.stop();
+          tree.start();
+
+          expect(function() {
+            tree.readdirSync('subdir');
+          }).to.throw();
+
+          let newTree = tree.chdir('my-directory');
+
+          expect(newTree.readdirSync('subdir')).to.eql([
+            'sup.txt',
+          ]);
         });
 
         it('is respected by changes', function() {
