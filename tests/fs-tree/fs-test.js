@@ -570,8 +570,8 @@ describe('FSTree fs abstraction', function() {
         expect(entry).to.have.property('mtime');
         expect(tree.changes()).to.have.property('length', 1);
 
-        expect(tree.statSync('new-directory/')).to.eql(entry);
-        expect(tree.statSync('new-directory')).to.eql(entry);
+        expect(tree.statSync('new-directory/').relativePath).to.eql('new-directory');
+        expect(tree.statSync('new-directory').relativePath).to.eql('new-directory');
 
         expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
           'hello.txt',
@@ -669,6 +669,16 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
+    describe.skip('.statSync', function() {
+      it('returns a stat object for normalized paths that exists', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+
+      it('throws for nonexistent paths', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+    });
+
     describe('.existsSync', function() {
       it('returns true for paths that resolve to the root dir', function() {
         expect(tree.existsSync('')).to.eql(true);
@@ -676,9 +686,10 @@ describe('FSTree fs abstraction', function() {
         expect(tree.existsSync('my-directory/..')).to.eql(true);
       });
 
-      it('returns true if the path exists', function() {
+      it('returns true if the normalized path exists', function() {
         expect(tree.existsSync('hello.txt')).to.eql(true);
         expect(tree.existsSync('my-directory')).to.eql(true);
+        expect(tree.existsSync('./my-directory/foo/..////')).to.eql(true);
       });
 
       it('returns false if the path does not exist', function() {
