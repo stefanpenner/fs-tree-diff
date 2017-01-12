@@ -835,7 +835,7 @@ describe('FSTree fs abstraction', function() {
         expect(result._parent).to.equal(tree);
 
         expect(result.root).to.equal(tree.root);
-        expect(result.cwd).to.equal('my-directory/');
+        expect(result._projection.cwd).to.equal('my-directory/');
       });
 
       describe('when path does not exist', function() {
