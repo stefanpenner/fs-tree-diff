@@ -1218,7 +1218,7 @@ describe('FSTree fs abstraction', function() {
       fs.removeSync(ROOT);
     });
 
-    describe('files', function() {
+    describe.only('files', function() {
       it('returns only matching files', function() {
         let filter = { files: ['hello.txt', 'a/foo/two.js', 'a/bar'] };
 
@@ -1232,7 +1232,7 @@ describe('FSTree fs abstraction', function() {
         ]);
       });
 
-      it.only('respects cwd', function() {
+      it('respects cwd', function() {
         let filter = { cwd: 'a/foo', files: ['one.js', 'two.css'] };
 
         expect(tree.filtered(filter).walkPaths()).to.eql([
@@ -1242,11 +1242,19 @@ describe('FSTree fs abstraction', function() {
       });
 
       it('is incompatible with include', function() {
-        expect('this thing is tested').to.equal(true);
+        let filter = { files: ['a/foo/one.js'], include: ['a/foo/one.css'] };
+
+        expect(function(){
+          tree.filtered(filter).walkPaths()
+        }).to.throw('Cannot pass files option (array or function) and a include/exlude filter. You can only have one or the other');
       });
 
       it('is incompatible with exclude', function() {
-        expect('this thing is tested').to.equal(true);
+        let filter = { files: ['a/foo/one.js'], exclude: ['a/foo/one.css'] };
+
+        expect(function(){
+          tree.filtered(filter).walkPaths()
+        }).to.throw('Cannot pass files option (array or function) and a include/exlude filter. You can only have one or the other');
       });
     });
 
@@ -1330,7 +1338,7 @@ describe('FSTree fs abstraction', function() {
   });
 
   describe('', function() {
-    
+
   });
 
   describe('match', function() {
