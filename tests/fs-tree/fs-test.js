@@ -1232,7 +1232,7 @@ describe('FSTree fs abstraction', function() {
         ]);
       });
 
-      it.only('respects cwd', function() {
+      it('respects cwd', function() {
         let filter = { cwd: 'a/foo', files: ['one.js', 'two.css'] };
 
         expect(tree.filtered(filter).walkPaths()).to.eql([
@@ -1330,7 +1330,7 @@ describe('FSTree fs abstraction', function() {
   });
 
   describe('', function() {
-    
+
   });
 
   describe('match', function() {
