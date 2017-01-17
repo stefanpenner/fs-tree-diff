@@ -1258,7 +1258,7 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
-    describe.only('include', function() {
+    describe('include', function() {
       it('matches by regexp', function() {
         let filter = { include: [new RegExp(/(hello|one)\.(txt|js)/)] };
 
@@ -1290,26 +1290,98 @@ describe('FSTree fs abstraction', function() {
       });
 
       it('matches by a mix of matchers', function() {
-        expect('this thing is tested').to.equal(true);
+        let filter = { include: ['**/*.txt', new RegExp(/(hello|one)\.(txt|js)/), p => p === 'a/bar/three.js'] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'a/bar/three.js',
+          'a/foo/one.js',
+          'goodbye.txt',
+          'hello.txt',
+        ]);
       });
 
 
       it('respects cwd', function() {
-        expect('this thing is tested').to.equal(true);
+        let filter = { cwd: 'a/foo', include: ['*.css'] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'one.css',
+          'two.css',
+        ]);
       });
     });
 
     describe('exclude', function() {
-      it('hides matching files', function() {
-        expect('this thing is tested').to.equal(true);
+      it('matches by regexp', function() {
+        let filter = { exclude: [new RegExp(/(hello|one|two)\.(txt|js)/)] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'a/',
+          'a/bar/',
+          'a/bar/three.css',
+          'a/bar/three.js',
+          'a/bar/two.css',
+          'a/foo/',
+          'a/foo/one.css',
+          'a/foo/two.css',
+          'b/',
+          'goodbye.txt',
+        ]);
+      });
+
+      it('matches by function', function() {
+        let filter = { cwd: 'a/bar', exclude: [p => p === 'three.css'] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'three.js',
+          'two.css',
+          'two.js',
+        ]);
+      });
+
+      it('hides matches by string globs', function() {
+        let filter = { exclude: ['**/*.{txt,css}'] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'a/',
+          'a/bar/',
+          'a/bar/three.js',
+          'a/bar/two.js',
+          'a/foo/',
+          'a/foo/one.js',
+          'a/foo/two.js',
+          'b/',
+        ]);
+      });
+
+      it('matches by a mix of matchers', function() {
+        let filter = { exclude: ['**/*.css', new RegExp(/(hello|one)\.(txt|js)/), p => p === 'a/bar/three.js'] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'a/',
+          'a/bar/',
+          'a/bar/two.js',
+          'a/foo/',
+          'a/foo/two.js',
+          'b/',
+          'goodbye.txt',
+        ]);
       });
 
       it('respects cwd', function() {
-        expect('this thing is tested').to.equal(true);
+        let filter = { cwd: 'a/foo', exclude: ['*.css'] };
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'one.js',
+          'two.js',
+        ]);
       });
 
       it('takes precedence over include', function() {
-        expect('this thing is tested').to.equal(true);
+        let filter = { cwd: 'a/foo', include: ['one.css', 'one.js'], exclude: ['*.css'] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'one.js',
+        ]);
       });
     });
   });
