@@ -1218,7 +1218,7 @@ describe('FSTree fs abstraction', function() {
       fs.removeSync(ROOT);
     });
 
-    describe.only('files', function() {
+    describe('files', function() {
       it('returns only matching files', function() {
         let filter = { files: ['hello.txt', 'a/foo/two.js', 'a/bar'] };
 
@@ -1258,10 +1258,41 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
-    describe('include', function() {
-      it('returns matching files', function() {
+    describe.only('include', function() {
+      it('matches by regexp', function() {
+        let filter = { include: [new RegExp(/(hello|one)\.(txt|js)/)] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'a/foo/one.js',
+          'hello.txt',
+        ]);
+      });
+
+      it('matches by function', function() {
+        let filter = { include: [p => p === 'a/bar/three.css'] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'a/bar/three.css',
+        ]);
+      });
+
+      it('matches by string globs', function() {
+        let filter = { include: ['**/*.{txt,js}'] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'a/bar/three.js',
+          'a/bar/two.js',
+          'a/foo/one.js',
+          'a/foo/two.js',
+          'goodbye.txt',
+          'hello.txt',
+        ]);
+      });
+
+      it('matches by a mix of matchers', function() {
         expect('this thing is tested').to.equal(true);
       });
+
 
       it('respects cwd', function() {
         expect('this thing is tested').to.equal(true);
