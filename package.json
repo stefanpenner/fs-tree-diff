@@ -24,6 +24,7 @@
     "matcher-collection": "^1.0.4",
     "md5hex": "^1.0.0",
     "minimatch": "^3.0.3",
+    "mkdirp": "^0.5.1",
     "object-assign": "^4.1.0",
     "path-posix": "^1.0.0",
     "rimraf": "^2.5.4",
