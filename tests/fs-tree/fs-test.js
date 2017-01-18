@@ -1017,7 +1017,7 @@ describe('FSTree fs abstraction', function() {
           expect(treeChanges).to.not.eql(newTreeChanges);
 
           expect(newTreeChanges).to.have.deep.property('0.0', 'create');
-          expect(newTreeChanges).to.have.deep.property('0.1', 'my-directory/subdir/ohai.txt');
+          expect(newTreeChanges).to.have.deep.property('0.1', 'ohai.txt');
           expect(newTreeChanges).to.have.deep.property('0.2.relativePath', 'my-directory/subdir/ohai.txt');
           expect(newTreeChanges).to.have.deep.property('0.2.mode');
           expect(newTreeChanges).to.have.deep.property('0.2.mtime');
@@ -1397,6 +1397,8 @@ describe('FSTree fs abstraction', function() {
     let tree;
 
     beforeEach(function() {
+      rimraf.sync(ROOT);
+      fs.mkdirpSync(ROOT);
 
       fixturify.writeSync(ROOT, {
         'hello.txt': "Hello, World!\n",
@@ -1414,8 +1416,7 @@ describe('FSTree fs abstraction', function() {
     })
 
     afterEach(function() {
-      tree.unlinkSync('omg.js');
-      tree.unlinkSync('my-directory/goodbye.txt');
+      fs.removeSync(ROOT);
     })
 
     it('hides no changes if all match', function() {
@@ -1444,7 +1445,10 @@ describe('FSTree fs abstraction', function() {
       expect(changes).to.have.property('length', 1);
       expect(changes).to.have.deep.property('0.length', 3);
       expect(changes).to.have.deep.property('0.0', 'create');
-      expect(changes).to.have.deep.property('0.1', 'my-directory/goodbye.txt');
+      expect(changes).to.have.deep.property('0.1', 'goodbye.txt');
+      expect(changes).to.have.deep.property('0.2.relativePath', 'my-directory/goodbye.txt');
+      expect(changes).to.have.deep.property('0.2.mode', 0);
+      expect(changes).to.have.deep.property('0.2.mtime');
     });
 
     it('hides changes if they do not match the file projection', function() {
@@ -1462,11 +1466,69 @@ describe('FSTree fs abstraction', function() {
     });
 
     describe('order', function() {
-      it.skip('has tests', function() {
+
+      beforeEach(function() {
+        rimraf.sync(ROOT);
+        fs.mkdirpSync(ROOT);
+
+        tree = new FSTree({
+          entries: walkSync.entries(ROOT),
+          root: ROOT,
+        });
+
+        tree.mkdirSync('a');
+        tree.mkdirSync('a/b');
+        tree.mkdirSync('a/b/c');
+        tree.writeFileSync('a/b/c/d.txt', 'd is a great letter.');
       });
-      // test changes are ordered:
-      // 1. addtions/updates lexicographicaly
-      // 2. removals reverse lexicographicaly
+
+      afterEach(function() {
+        fs.removeSync(ROOT);
+      });
+
+      it('additions/updates lexicographicaly', function() {
+        let changes = tree.changes();
+
+        expect(changes).to.have.property('length', 4);
+        expect(changes).to.have.deep.property('0.length', 3);
+        expect(changes).to.have.deep.property('0.0', 'mkdir');
+        expect(changes).to.have.deep.property('0.1', 'a');
+        expect(changes).to.have.deep.property('1.length', 3);
+        expect(changes).to.have.deep.property('1.0', 'mkdir');
+        expect(changes).to.have.deep.property('1.1', 'a/b');
+        expect(changes).to.have.deep.property('2.length', 3);
+        expect(changes).to.have.deep.property('2.0', 'mkdir');
+        expect(changes).to.have.deep.property('2.1', 'a/b/c');
+        expect(changes).to.have.deep.property('3.length', 3);
+        expect(changes).to.have.deep.property('3.0', 'create');
+        expect(changes).to.have.deep.property('3.1', 'a/b/c/d.txt');
+      });
+
+      it('removals reverse lexicographicaly', function() {
+        tree.stop();
+        tree.start();
+
+        tree.unlinkSync('a/b/c/d.txt');
+        tree.rmdirSync('a/b/c');
+        tree.rmdirSync('a/b');
+        tree.rmdirSync('a');
+
+        let changes = tree.changes();
+
+        expect(changes).to.have.property('length', 4);
+        expect(changes).to.have.deep.property('0.length', 3);
+        expect(changes).to.have.deep.property('0.0', 'unlink');
+        expect(changes).to.have.deep.property('0.1', 'a/b/c/d.txt');
+        expect(changes).to.have.deep.property('1.length', 3);
+        expect(changes).to.have.deep.property('1.0', 'rmdir');
+        expect(changes).to.have.deep.property('1.1', 'a/b/c');
+        expect(changes).to.have.deep.property('2.length', 3);
+        expect(changes).to.have.deep.property('2.0', 'rmdir');
+        expect(changes).to.have.deep.property('2.1', 'a/b');
+        expect(changes).to.have.deep.property('3.length', 3);
+        expect(changes).to.have.deep.property('3.0', 'rmdir');
+        expect(changes).to.have.deep.property('3.1', 'a');
+      });
     });
   });
 
