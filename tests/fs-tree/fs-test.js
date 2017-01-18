@@ -1589,6 +1589,100 @@ describe('FSTree fs abstraction', function() {
     });
   });
 
+  describe('projection', function() {
+    let tree;
+
+    beforeEach(function() {
+      rimraf.sync(ROOT);
+      fs.mkdirpSync(ROOT);
+
+      fixturify.writeSync(ROOT, {
+        'hello.txt': "Hello, World!\n",
+        'goodbye.txt': 'Goodbye, World\n',
+        'a': {
+          'foo': {
+            'one.js': '',
+            'one.css': '',
+            'two.js': '',
+            'two.css': '',
+          },
+          'bar': {
+            'two.js': '',
+            'two.css': '',
+            'three.js': '',
+            'three.css': '',
+          }
+        },
+        'b': {},
+      });
+
+      tree = new FSTree({
+        entries: walkSync.entries(ROOT),
+        root: ROOT,
+      });
+    });
+
+    afterEach(function() {
+      fs.removeSync(ROOT);
+    });
+
+    describe('files', function() {
+      it('returns only matching files', function() {
+        let filter = { files: ['hello.txt', 'a/foo/two.js', 'a/bar'] };
+
+        // funnel will cp -r if files:[ 'path/to/dir/' ]
+        // so this is semantically different, but i don't think it's actually
+        // public API for files to contain a path to a dir
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'a/bar/',
+          'a/foo/two.js',
+          'hello.txt',
+        ]);
+      });
+
+      it.only('respects cwd', function() {
+        let filter = { cwd: 'a/foo', files: ['one.js', 'two.css'] };
+
+        expect(tree.filtered(filter).walkPaths()).to.eql([
+          'one.js',
+          'two.css',
+        ]);
+      });
+
+      it('is incompatible with include', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+
+      it('is incompatible with exclude', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+    });
+
+    describe('include', function() {
+      it('returns matching files', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+
+      it('respects cwd', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+    });
+
+    describe('exclude', function() {
+      it('hides matching files', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+
+      it('respects cwd', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+
+      it('takes precedence over include', function() {
+        expect('this thing is tested').to.equal(true);
+      });
+    });
+  });
+
   describe('changes', function() {
     let tree;
 
