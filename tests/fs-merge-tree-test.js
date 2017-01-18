@@ -1,3 +1,4 @@
+'use strict';
 const FSMergeTree = require('../lib/fs-merge-tree');
 const expect = require('chai').expect;
 const path = require('path');
