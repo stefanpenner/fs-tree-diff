@@ -688,6 +688,9 @@ describe('FSTree fs abstraction', function() {
 
         let changes = tree.changes();
 
+        expect(changes.map(e => e[0])).to.deep.equal(['mkdir','mkdir','mkdir','mkdir' ]);
+        expect(changes.map(e => e[1])).to.deep.equal(['new-directory','new-directory/a','new-directory/a/b','new-directory/a/b/c' ]);
+        expect(changes.map(e => e[2].relativePath)).to.deep.equal(['new-directory','new-directory/a','new-directory/a/b','new-directory/a/b/c' ]);
 
         let operation = changes[3][0];
         let relativePath = changes[3][1];
@@ -700,9 +703,7 @@ describe('FSTree fs abstraction', function() {
         expect(isDirectory(entry)).to.eql(true);
         expect(entry).to.have.property('mtime');
         expect(tree.changes()).to.have.property('length', 4);
-
         expect(tree.statSync('new-directory').relativePath).to.eql('new-directory');
-
         expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
           'hello.txt',
           'my-directory/',
@@ -757,7 +758,7 @@ describe('FSTree fs abstraction', function() {
           }).to.throw(/NOPE/);
           expect(function() {
             tree.mkdirpSync('hello.txt');
-          }).to.throw(/mkdir/);
+          }).to.throw(/mkdirp/);
         });
       });
     });
