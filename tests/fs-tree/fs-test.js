@@ -9,6 +9,7 @@ const Entry = require('../../lib/entry');
 const md5hex = require('md5hex');
 const fixturify = require('fixturify');
 const rimraf = require('rimraf');
+const oneLine = require('common-tags').oneLine;
 
 const util = require('./util');
 const file = util.file;
@@ -120,6 +121,143 @@ describe('FSTree fs abstraction', function() {
         expect(lazyTree._hasEntries).to.eql(true);
         expect(childTree._hasEntries).to.eql(true);
         expect(childTree.entries).to.equal(lazyTree.entries);
+      });
+    });
+
+    describe('.srcTree', function() {
+      it('defaults to false', function() {
+        expect(new FSTree({
+          root: ROOT
+        })).to.have.property('srcTree', false);
+      });
+
+      it('can be specified as an option', function() {
+        expect(new FSTree({
+          srcTree: true,
+          root: ROOT,
+        })).to.have.property('srcTree', true);
+      });
+
+      it('is false for chdir projections', function() {
+        let tree = new FSTree({
+          root: ROOT,
+          srcTree: true,
+        });
+        tree._ensureEntriesPopulated();
+        expect(tree.srcTree).to.equal(true);
+        expect(tree.chdir('my-directory').srcTree).to.equal(false);
+        // projection does not affect parent
+        expect(tree.srcTree).to.equal(true);
+      });
+
+      it('is false for filtered projections', function() {
+        let tree = new FSTree({
+          root: ROOT,
+          srcTree: true,
+        });
+        expect(tree.srcTree).to.equal(true);
+        expect(tree.filtered({ include: ['**/*'] }).srcTree).to.equal(false);
+        // projection does not affect parent
+        expect(tree.srcTree).to.equal(true);
+      });
+    });
+
+    describe('.reread', function() {
+      it('resets entries for source trees', function() {
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: true,
+        });
+
+        expect(tree.walkPaths()).to.eql([]);
+
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        tree.reread();
+
+        expect(tree.walkPaths()).to.eql([
+          'a/',
+          'a/b',
+          'a2'
+        ]);
+      });
+
+      it('does not reset entries for non-source trees', function() {
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: false,
+        });
+
+        expect(tree.walkPaths()).to.eql([]);
+
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        tree.reread();
+
+        expect(tree.walkPaths()).to.eql([]);
+      });
+
+      it('can change roots for source trees', function() {
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: true,
+        });
+
+        expect(tree.walkPaths()).to.eql([
+          'a/',
+          'a/b',
+          'a2'
+        ]);
+
+        tree.reread(`${ROOT}/my-directory/a`);
+
+        expect(tree.walkPaths()).to.eql([
+          'b',
+        ]);
+      });
+
+      it('throws if called with a new root for a non-source tree', function() {
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: false,
+        });
+
+        expect(tree.walkPaths()).to.eql([
+          'a/',
+          'a/b',
+          'a2'
+        ]);
+
+        expect(function() {
+          tree.reread(`${ROOT}/my-directory/a`);
+        }).to.throw(oneLine`
+          Cannot change root from '${ROOT}/my-directory/' to
+          '${ROOT}/my-directory/a' of a non-source tree.
+        `);
       });
     });
 
@@ -1119,8 +1257,14 @@ describe('FSTree fs abstraction', function() {
 
           let treeChanges = tree.changes();
           let newTreeChanges = newTree.changes();
+          expect(treeChanges).to.not.eql(newTreeChanges);
 
-          expect(treeChanges).to.eql(newTreeChanges);
+          expect(newTreeChanges).to.have.deep.property('0.0', 'create');
+          expect(newTreeChanges).to.have.deep.property('0.1', 'ohai.txt');
+          expect(newTreeChanges).to.have.deep.property('0.2.relativePath', 'my-directory/subdir/ohai.txt');
+          expect(newTreeChanges).to.have.deep.property('0.2.mode');
+          expect(newTreeChanges).to.have.deep.property('0.2.mtime');
+          expect(newTreeChanges.length).to.eql(1);
 
           expect(treeChanges).to.have.deep.property('0.0', 'mkdir');
           expect(treeChanges).to.have.deep.property('0.1', 'my-directory/subdir');
@@ -1135,6 +1279,7 @@ describe('FSTree fs abstraction', function() {
           expect(treeChanges.length).to.eql(2);
         });
 
+        // TODO: remove this when match is removed.
         it('is respected by match', function() {
           expect(tree.match({ include: ['*'] }).map(e => e.relativePath)).to.eql([
             'hello.txt',
@@ -1444,7 +1589,7 @@ describe('FSTree fs abstraction', function() {
         ]);
       });
 
-      it('hides matches by string globs', function() {
+      it('matches by string globs', function() {
         let filter = { exclude: ['**/*.{txt,css}'] };
 
         expect(tree.filtered(filter).walkPaths()).to.eql([
@@ -1497,6 +1642,8 @@ describe('FSTree fs abstraction', function() {
     let tree;
 
     beforeEach(function() {
+      rimraf.sync(ROOT);
+      fs.mkdirpSync(ROOT);
 
       fixturify.writeSync(ROOT, {
         'hello.txt': "Hello, World!\n",
@@ -1509,41 +1656,124 @@ describe('FSTree fs abstraction', function() {
       });
 
       tree.writeFileSync('omg.js', 'hi');
+      tree.writeFileSync('hello.txt', "Hello Again, World!\n");
+      tree.writeFileSync('my-directory/goodbye.txt', "Goodbye, World!\n");
     })
 
     afterEach(function() {
-      tree.unlinkSync('omg.js');
+      fs.removeSync(ROOT);
     })
 
     it('hides no changes if all match', function() {
-      let changes = tree.changes({ include: ['**/*.js']});
+      let filter = { include: ['**/*'] };
+      let changes = tree.filtered(filter).changes();
+
+      expect(changes).to.have.property('length', 3);
+      expect(changes).to.have.deep.property('0.length', 3);
+      expect(changes).to.have.deep.property('0.0', 'create');
+      expect(changes).to.have.deep.property('0.1', 'omg.js');
+      expect(changes).to.have.deep.property('1.length', 3);
+      expect(changes).to.have.deep.property('1.0', 'change');
+      expect(changes).to.have.deep.property('1.1', 'hello.txt');
+      expect(changes).to.have.deep.property('2.length', 3);
+      expect(changes).to.have.deep.property('2.0', 'create');
+      expect(changes).to.have.deep.property('2.1', 'my-directory/goodbye.txt');
+    });
+
+    it('hides changes if none match', function() {
+      expect(tree.filtered({ include: ['NO_MATCH'] }).changes()).to.have.property('length', 0);
+    });
+
+    it('hides changes if they are outside of cwd', function() {
+      let changes = tree.chdir('my-directory').changes();
 
       expect(changes).to.have.property('length', 1);
       expect(changes).to.have.deep.property('0.length', 3);
       expect(changes).to.have.deep.property('0.0', 'create');
-      expect(changes).to.have.deep.property('0.1', 'omg.js');
+      expect(changes).to.have.deep.property('0.1', 'goodbye.txt');
+      expect(changes).to.have.deep.property('0.2.relativePath', 'my-directory/goodbye.txt');
+      expect(changes).to.have.deep.property('0.2.mode', 0);
+      expect(changes).to.have.deep.property('0.2.mtime');
     });
 
+    it('hides changes if they do not match the file projection', function() {
+      let filter = { files: ['file-not-here.txt'] };
+      let changes = tree.filtered(filter).changes();
 
-    it('hides changes if none match', function() {
-      expect(tree.changes({ include: ['NO-MATCH'] })).to.have.property('length', 0);
+      expect(changes).to.have.property('length', 0);
     });
 
-    it('hides changes if they are outside of cwd', function() {
-      expect('this thing is tested').to.equal(true);
-    });
+    it('hides changes if they do not match the include and exclude projection', function() {
+      let filter = { include: ['**/include.css'], exclude: [e => e === 'excluded.js'] };
+      let changes = tree.filtered(filter).changes();
 
-    it('hides changes if they do not match the projection', function() {
-      expect('this thing is tested').to.equal(true);
+      expect(changes).to.have.property('length', 0);
     });
-
 
     describe('order', function() {
-      it.skip('has tests', function() {
+
+      beforeEach(function() {
+        rimraf.sync(ROOT);
+        fs.mkdirpSync(ROOT);
+
+        tree = new FSTree({
+          entries: walkSync.entries(ROOT),
+          root: ROOT,
+        });
+
+        tree.mkdirSync('a');
+        tree.mkdirSync('a/b');
+        tree.mkdirSync('a/b/c');
+        tree.writeFileSync('a/b/c/d.txt', 'd is a great letter.');
       });
-      // test changes are ordered:
-      // 1. addtions/updates lexicographicaly
-      // 2. removals reverse lexicographicaly
+
+      afterEach(function() {
+        fs.removeSync(ROOT);
+      });
+
+      it('additions/updates lexicographicaly', function() {
+        let changes = tree.changes();
+
+        expect(changes).to.have.property('length', 4);
+        expect(changes).to.have.deep.property('0.length', 3);
+        expect(changes).to.have.deep.property('0.0', 'mkdir');
+        expect(changes).to.have.deep.property('0.1', 'a');
+        expect(changes).to.have.deep.property('1.length', 3);
+        expect(changes).to.have.deep.property('1.0', 'mkdir');
+        expect(changes).to.have.deep.property('1.1', 'a/b');
+        expect(changes).to.have.deep.property('2.length', 3);
+        expect(changes).to.have.deep.property('2.0', 'mkdir');
+        expect(changes).to.have.deep.property('2.1', 'a/b/c');
+        expect(changes).to.have.deep.property('3.length', 3);
+        expect(changes).to.have.deep.property('3.0', 'create');
+        expect(changes).to.have.deep.property('3.1', 'a/b/c/d.txt');
+      });
+
+      it('removals reverse lexicographicaly', function() {
+        tree.stop();
+        tree.start();
+
+        tree.unlinkSync('a/b/c/d.txt');
+        tree.rmdirSync('a/b/c');
+        tree.rmdirSync('a/b');
+        tree.rmdirSync('a');
+
+        let changes = tree.changes();
+
+        expect(changes).to.have.property('length', 4);
+        expect(changes).to.have.deep.property('0.length', 3);
+        expect(changes).to.have.deep.property('0.0', 'unlink');
+        expect(changes).to.have.deep.property('0.1', 'a/b/c/d.txt');
+        expect(changes).to.have.deep.property('1.length', 3);
+        expect(changes).to.have.deep.property('1.0', 'rmdir');
+        expect(changes).to.have.deep.property('1.1', 'a/b/c');
+        expect(changes).to.have.deep.property('2.length', 3);
+        expect(changes).to.have.deep.property('2.0', 'rmdir');
+        expect(changes).to.have.deep.property('2.1', 'a/b');
+        expect(changes).to.have.deep.property('3.length', 3);
+        expect(changes).to.have.deep.property('3.0', 'rmdir');
+        expect(changes).to.have.deep.property('3.1', 'a');
+      });
     });
   });
 

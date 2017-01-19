@@ -1,5 +1,7 @@
 'use strict';
+
 const FSMergeTree = require('../lib/fs-merge-tree');
+const FSTree = require('../');
 const expect = require('chai').expect;
 const path = require('path');
 
@@ -7,18 +9,18 @@ describe('FSMergeTree', function() {
   let ROOT = path.resolve('tmp/fs-test-root/');
 
   describe('constructor', function() {
-    it('supports empty roots', function() {
+    it('supports empty inputs', function() {
       let tree = new FSMergeTree({
-        roots: []
+        inputs: []
       });
 
       expect(tree.length).to.equal(0);
       expect(tree).to.not.have.property(0);
     });
 
-    it('supports multiple roots', function() {
+    it('supports multiple inputs', function() {
       let tree = new FSMergeTree({
-        roots: [ROOT + 'foo', ROOT + 'bar']
+        inputs: [ROOT + 'foo', ROOT + 'bar']
       });
 
       expect(tree.length).to.equal(2);
@@ -26,20 +28,45 @@ describe('FSMergeTree', function() {
       expect(tree).to.have.property(1);
       expect(tree).to.not.have.property(2);
     });
+
+    it('supports tree inputs', function() {
+      let tree = new FSTree({
+        root: ROOT
+      });
+      let fsMergeTree = new FSMergeTree({
+        inputs: [tree]
+      });
+
+      expect(fsMergeTree.length).to.equal(1);
+      expect(fsMergeTree).to.have.property(0);
+      expect(fsMergeTree).to.not.have.property(1);
+    });
+
+    it('sets srcTree to true for string inputs', function() {
+      let tree = new FSTree({
+        root: `${ROOT}/guten-tag`,
+      });
+      let fsMergeTree = new FSMergeTree({
+        inputs: [tree, `${ROOT}/hello`]
+      });
+
+      expect(fsMergeTree).to.have.deep.property('0.srcTree', false);
+      expect(fsMergeTree).to.have.deep.property('1.srcTree', true);
+    });
   });
 
   describe('.map', function() {
-    it('maps over no roots', function() {
+    it('maps over no inputs', function() {
       let result = new FSMergeTree({
-        roots: []
+        inputs: []
       }).map((entry, index) => [entry, index])
 
       expect(result.length).to.equal(0);
     });
 
-    it('maps over multipel roots', function() {
+    it('maps over multiple inputs', function() {
       let result = new FSMergeTree({
-        roots: [ROOT + '/foo', ROOT + '/bar']
+        inputs: [ROOT + '/foo', ROOT + '/bar']
       }).map((entry, index) => [entry, index])
 
       expect(result.length).to.equal(2);
