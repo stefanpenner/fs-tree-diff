@@ -121,6 +121,65 @@ describe('FSTree fs abstraction', function() {
         expect(childTree._hasEntries).to.eql(true);
         expect(childTree.entries).to.equal(lazyTree.entries);
       });
+
+      describe('with grandparents', function() {
+        let grandchildTree;
+
+        beforeEach(function() {
+          grandchildTree = FSTree.fromParent(childTree);
+        });
+
+        it('shares cwd and can populate from grandparent', function() {
+          let lazyTree = new FSTree({
+            root: ROOT,
+            cwd: '',
+          });
+          let childTree = new FSTree({
+            parent: lazyTree,
+          });
+          let grandchildTree = new FSTree({
+            parent: childTree,
+          });
+
+          expect(grandchildTree.cwd).to.eql(lazyTree.cwd);
+          expect(childTree.cwd).to.eql(lazyTree.cwd);
+        });
+
+        it('shares files and can populate from grandparent', function() {
+          let lazyTree = new FSTree({
+            root: ROOT,
+            files: ['hello.txt'],
+          });
+          let childTree = new FSTree({
+            parent: lazyTree,
+          });
+          let grandchildTree = new FSTree({
+            parent: childTree,
+          });
+
+          expect(grandchildTree.files).to.eql(lazyTree.files);
+          expect(childTree.files).to.eql(lazyTree.files);
+        });
+
+        it('shares include and exclude and can populate from grandparent', function() {
+          let lazyTree = new FSTree({
+            root: ROOT,
+            include: ['include.txt'],
+            exclude: ['**.*.txt'],
+          });
+          let childTree = new FSTree({
+            parent: lazyTree,
+          });
+          let grandchildTree = new FSTree({
+            parent: childTree,
+          });
+
+          expect(grandchildTree.include).to.eql(lazyTree.include);
+          expect(childTree.include).to.eql(lazyTree.include);
+          expect(grandchildTree.exclude).to.eql(lazyTree.exclude);
+          expect(childTree.exclude).to.eql(lazyTree.exclude);
+        });
+      });
     });
 
     describe('.findByRelativePath', function () {
@@ -881,7 +940,7 @@ describe('FSTree fs abstraction', function() {
         let result = tree.chdir('my-directory');
         expect(result).to.not.equal(tree);
 
-        expect(result._parent).to.equal(tree);
+        expect(result.parent).to.equal(tree);
 
         expect(result.root).to.equal(tree.root);
         expect(result.cwd).to.equal('my-directory/');
@@ -1079,7 +1138,7 @@ describe('FSTree fs abstraction', function() {
           cwd: 'my-directory',
         });
 
-        expect(projection._parent).to.equal(tree);
+        expect(projection.parent).to.equal(tree);
 
         expect(projection.include).to.eql(['*.js']);
         expect(projection.exclude).to.eql(['*.css']);
