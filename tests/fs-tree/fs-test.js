@@ -818,6 +818,89 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
+
+    describe('.mkdirpSync', function() {
+      it('-> directory (create)', function() {
+        expect(tree.changes()).to.eql([]);
+        expect(tree.mkdirpSync('new-directory/a/b/c/')).to.eql(undefined);
+
+        let changes = tree.changes();
+
+        expect(changes.map(e => e[0])).to.deep.equal(['mkdir','mkdir','mkdir','mkdir' ]);
+        expect(changes.map(e => e[1])).to.deep.equal(['new-directory','new-directory/a','new-directory/a/b','new-directory/a/b/c' ]);
+        expect(changes.map(e => e[2].relativePath)).to.deep.equal(['new-directory','new-directory/a','new-directory/a/b','new-directory/a/b/c' ]);
+
+        let operation = changes[3][0];
+        let relativePath = changes[3][1];
+        let entry = changes[3][2];
+
+        expect(operation).to.eql('mkdir');
+        expect(relativePath).to.eql('new-directory/a/b/c');
+        expect(entry).to.have.property('relativePath', 'new-directory/a/b/c');
+        expect(entry).to.have.property('mode');
+        expect(isDirectory(entry)).to.eql(true);
+        expect(entry).to.have.property('mtime');
+        expect(tree.changes()).to.have.property('length', 4);
+        expect(tree.statSync('new-directory').relativePath).to.eql('new-directory');
+        expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
+          'hello.txt',
+          'my-directory/',
+          'new-directory',
+          'new-directory/a',
+          'new-directory/a/b',
+          'new-directory/a/b/c'
+         ]);
+      });
+
+      it('directory/ -> directory/ (idempotence)', function testDir2Dir() {
+        let old = fs.statSync(`${tree.root}/my-directory`);
+        tree.mkdirpSync('my-directory/');
+
+        let current = fs.statSync(`${tree.root}/my-directory`);
+
+        expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
+        expect(old).to.have.property('mode', current.mode);
+        expect(old).to.have.property('size', current.size);
+        expect(tree.changes()).to.eql([]);
+
+        expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
+          'hello.txt',
+          'my-directory/',
+        ]);
+      });
+
+      it('directory/ -> directory (idempotence, path normalization)', function () {
+        let old = fs.statSync(`${tree.root}/my-directory`);
+
+        tree.mkdirpSync('my-directory');
+
+        let current = fs.statSync(`${tree.root}/my-directory`);
+
+        expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
+        expect(old).to.have.property('mode', current.mode);
+        expect(old).to.have.property('size', current.size);
+        expect(tree.changes()).to.eql([]);
+
+        expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
+          'hello.txt',
+          'my-directory/',
+        ]);
+      });
+
+
+      describe('start/stop', function() {
+        it('does error when stopped', function() {
+          tree.stop();
+          expect(function() {
+            tree.mkdirpSync('hello.txt');
+          }).to.throw(/NOPE/);
+          expect(function() {
+            tree.mkdirpSync('hello.txt');
+          }).to.throw(/mkdirp/);
+        });
+      });
+    });
+
     describe('.resolvePath', function() {
       it('resolves the empty string', function() {
         expect(tree.resolvePath('')).to.eql(ROOT);
@@ -1102,6 +1185,28 @@ describe('FSTree fs abstraction', function() {
             newTree.statSync('subdir')
           ).to.have.property('relativePath', 'my-directory/subdir');
         });
+
+        it('is respected by mkdirpSync', function() {
+          expect(tree.statSync('my-directory/subdir/a/b/c')).to.equal(null);
+          let newTree = tree.chdir('my-directory');
+          newTree.mkdirpSync('subdir/a/b/c');
+
+          expect(
+              tree.statSync('my-directory/subdir')
+          ).to.have.property('relativePath', 'my-directory/subdir');
+          expect(
+              newTree.statSync('subdir')
+          ).to.have.property('relativePath', 'my-directory/subdir');
+          expect(
+              tree.statSync('my-directory/subdir/a')
+          ).to.have.property('relativePath', 'my-directory/subdir/a');
+
+          expect(
+              tree.statSync('my-directory/subdir/a/b')
+          ).to.have.property('relativePath', 'my-directory/subdir/a/b');
+
+        });
+
 
         it('is respected by writeFileSync', function() {
           expect(fs.existsSync(`${ROOT}/my-directory/hello-again.txt`)).to.equal(false);
@@ -1530,6 +1635,8 @@ describe('FSTree fs abstraction', function() {
       });
     });
   });
+
+
 
   describe('changes', function() {
     let tree;
