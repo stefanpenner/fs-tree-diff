@@ -359,6 +359,9 @@ describe('FSTree fs abstraction', function() {
         it('tracks and correctly updates a file -> file', function() {
           tree.writeFileSync('new-file.txt', 'new file');
           let old = fs.statSync(tree.root + 'new-file.txt');
+          tree.stop();
+          tree.start();
+
           tree.writeFileSync('new-file.txt', 'new different content');
 
           let current = fs.statSync(tree.root + 'new-file.txt');
@@ -487,6 +490,10 @@ describe('FSTree fs abstraction', function() {
         it('tracks and correctly updates a file -> file', function() {
           tree.symlinkSync(`${tree.root}hello.txt`, 'hi');
           let old = fs.statSync(`${tree.root}hi`);
+
+          tree.stop();
+          tree.start();
+
           tree.writeFileSync('hi', 'new different content');
 
           let current = fs.statSync(`${tree.root}hi`);
@@ -943,6 +950,9 @@ describe('FSTree fs abstraction', function() {
           expect(
             tree.statSync('my-directory/subdir')
           ).to.have.property('relativePath', 'my-directory/subdir')
+
+          tree.stop();
+          tree.start();
 
           let newTree = tree.chdir('my-directory');
           newTree.rmdirSync('subdir');
