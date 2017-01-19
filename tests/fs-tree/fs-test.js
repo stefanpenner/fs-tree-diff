@@ -1049,27 +1049,22 @@ describe('FSTree fs abstraction', function() {
 
         it('is respected by mkdirpSync', function() {
           expect(tree.statSync('my-directory/subdir/a/b/c')).to.equal(null);
-
           let newTree = tree.chdir('my-directory');
           newTree.mkdirpSync('subdir/a/b/c');
 
-          console.log(tree.statSync('my-directory/subdir'));
-          console.log(tree.statSync('my-directory/subdir/a'));
-          console.log(tree.statSync('my-directory/subdir/a/b'));
-          //
-          // expect(
-          //     tree.statSync('my-directory/subdir')
-          // ).to.have.property('relativePath', 'my-directory/subdir/');
-          // expect(
-          //     newTree.statSync('subdir')
-          // ).to.have.property('relativePath', 'my-directory/subdir/');
-          // expect(
-          //     tree.statSync('my-directory/subdir/a')
-          // ).to.have.property('relativePath', 'my-directory/subdir/a/');
-          //
-          // expect(
-          //     tree.statSync('my-directory/subdir/a/b')
-          // ).to.have.property('relativePath', 'my-directory/subdir/a/b/');
+          expect(
+              tree.statSync('my-directory/subdir')
+          ).to.have.property('relativePath', 'my-directory/subdir');
+          expect(
+              newTree.statSync('subdir')
+          ).to.have.property('relativePath', 'my-directory/subdir');
+          expect(
+              tree.statSync('my-directory/subdir/a')
+          ).to.have.property('relativePath', 'my-directory/subdir/a');
+
+          expect(
+              tree.statSync('my-directory/subdir/a/b')
+          ).to.have.property('relativePath', 'my-directory/subdir/a/b');
 
         });
 
