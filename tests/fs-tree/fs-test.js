@@ -72,7 +72,7 @@ describe('FSTree fs abstraction', function() {
         expect(childTree._changes).to.equal(tree._changes);
       });
 
-      it('shares _state', function() {
+      it.only('shares _state', function() {
         expect(tree._state).to.eql('started');
         expect(childTree._state).to.eql('started');
 
@@ -290,6 +290,8 @@ describe('FSTree fs abstraction', function() {
         expect(tree.walkPaths()).to.eql([
           'b',
         ]);
+
+        expect(tree.root).to.eql(`${ROOT}/my-directory/a/`);
       });
 
       it('throws if called with a new root for a non-source tree', function() {
@@ -317,6 +319,24 @@ describe('FSTree fs abstraction', function() {
           Cannot change root from '${ROOT}/my-directory/' to
           '${ROOT}/my-directory/a' of a non-source tree.
         `);
+      });
+
+      it('throws if given a relative path for a root', function() {
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: true,
+        });
+
+        expect(function() {
+          tree.reread('my-directory');
+        }).to.throw(`Root must be an absolute path, tree.root: 'my-directory'`);
       });
     });
 
