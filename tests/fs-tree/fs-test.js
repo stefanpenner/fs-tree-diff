@@ -187,6 +187,8 @@ describe('FSTree fs abstraction', function() {
         ]);
       });
 
+
+
       it('does not reset entries for non-source trees', function() {
         let tree = new FSTree({
           root: `${ROOT}/my-directory`,
@@ -232,6 +234,36 @@ describe('FSTree fs abstraction', function() {
           'b',
         ]);
       });
+
+
+      it.only('can change roots for source trees without providing absolute path', function() {
+        fixturify.writeSync(`${ROOT}/my-directory/`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        let tree = new FSTree({
+          root: `${ROOT}`,
+          srcTree: true,
+        });
+
+        expect(tree.walkPaths()).to.eql([
+          'hello.txt',
+          'my-directory/',
+          'my-directory/a/',
+          'my-directory/a/b',
+          'my-directory/a2'
+        ]);
+        //when the absolute path is not passed to reread, it should convert the path to absolute path
+        tree.reread(`tmp/fs-test-root/my-directory/a`);
+        expect(tree.walkPaths()).to.eql([
+          'b',
+        ]);
+      });
+
+
 
       it('throws if called with a new root for a non-source tree', function() {
         fixturify.writeSync(`${ROOT}/my-directory`, {
@@ -495,7 +527,9 @@ describe('FSTree fs abstraction', function() {
 
       describe('update', function() {
         it('tracks and correctly updates a file -> file', function() {
+
           tree.writeFileSync('new-file.txt', 'new file');
+
           let old = fs.statSync(tree.root + 'new-file.txt');
           tree.writeFileSync('new-file.txt', 'new different content');
 
@@ -507,13 +541,13 @@ describe('FSTree fs abstraction', function() {
 
           let changes = tree.changes();
 
-          expect(changes).to.have.deep.property('0.0', 'change');
-          expect(changes).to.have.deep.property('0.1', 'new-file.txt');
-          expect(changes).to.have.deep.property('0.2.relativePath', 'new-file.txt');
-          expect(changes).to.have.deep.property('0.2.checksum', md5hex('new different content'));
-          expect(changes).to.have.deep.property('0.2.mode', 0);
-          expect(changes).to.have.deep.property('0.2.mtime');
-          expect(changes).to.have.property('length', 1);
+          expect(changes).to.have.deep.property('1.0', 'change');
+          expect(changes).to.have.deep.property('1.1', 'new-file.txt');
+          expect(changes).to.have.deep.property('1.2.relativePath', 'new-file.txt');
+          expect(changes).to.have.deep.property('1.2.checksum', md5hex('new different content'));
+          expect(changes).to.have.deep.property('1.2.mode', 0);
+          expect(changes).to.have.deep.property('1.2.mtime');
+          expect(changes).to.have.property('length', 2);
 
           expect(tree.entries.map(e => e.relativePath)).to.eql([
             'hello.txt',
@@ -635,12 +669,12 @@ describe('FSTree fs abstraction', function() {
 
           let changes = tree.changes();
 
-          expect(changes).to.have.deep.property('0.0', 'change');
-          expect(changes).to.have.deep.property('0.1', 'hi');
-          expect(changes).to.have.deep.property('0.2.relativePath', 'hi');
-          expect(changes).to.have.deep.property('0.2.mode', 0);
-          expect(changes).to.have.deep.property('0.2.mtime');
-          expect(changes).to.have.property('length', 1);
+          expect(changes).to.have.deep.property('1.0', 'change');
+          expect(changes).to.have.deep.property('1.1', 'hi');
+          expect(changes).to.have.deep.property('1.2.relativePath', 'hi');
+          expect(changes).to.have.deep.property('1.2.mode', 0);
+          expect(changes).to.have.deep.property('1.2.mtime');
+          expect(changes).to.have.property('length', 2);
 
           expect(tree.entries.map(e => e.relativePath)).to.eql([
             'hello.txt',
