@@ -72,7 +72,7 @@ describe('FSTree fs abstraction', function() {
         expect(childTree._changes).to.equal(tree._changes);
       });
 
-      it.only('shares _state', function() {
+      it('shares _state', function() {
         expect(tree._state).to.eql('started');
         expect(childTree._state).to.eql('started');
 
