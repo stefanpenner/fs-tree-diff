@@ -75,7 +75,6 @@ describe('FSTree fs abstraction', function() {
       it('shares _state', function() {
         expect(tree._state).to.eql('started');
         expect(childTree._state).to.eql('started');
-
         tree.stop();
 
         expect(tree._state).to.eql('stopped');
@@ -1887,7 +1886,6 @@ describe('FSTree fs abstraction', function() {
     })
 
     it('ignores nothing, if all match', function() {
-      debugger;
       let matched = tree.match({ include: ['**/*.js'] });
 
       expect(matched).to.have.property('length', 8);

@@ -90,7 +90,6 @@ A.prototype.build = function() {
         case 'mkdir' : return plugin.out.mkdir(relativePath);
       }
     } catch(e) {
-      debugger;
     }
   }).finally(function() {
     plugin.out.stop(); // TODO: broccoli should call this;
