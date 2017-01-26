@@ -351,24 +351,6 @@ describe('FSTree fs abstraction', function() {
           '${ROOT}/my-directory/a' of a non-source tree.
         `);
       });
-
-      // it('throws if given a relative path for a root', function() {
-      //   fixturify.writeSync(`${ROOT}/my-directory`, {
-      //     a: {
-      //       b: 'hello',
-      //     },
-      //     a2: 'guten tag'
-      //   });
-      //
-      //   let tree = new FSTree({
-      //     root: `${ROOT}/my-directory`,
-      //     srcTree: true,
-      //   });
-      //
-      //   expect(function() {
-      //     tree.reread('my-directory');
-      //   }).to.throw(`Root must be an absolute path, tree.root: 'my-directory'`);
-      // });
     });
 
     describe('.findByRelativePath', function () {
@@ -605,9 +587,7 @@ describe('FSTree fs abstraction', function() {
 
       describe('update', function() {
         it('tracks and correctly updates a file -> file', function() {
-
           tree.writeFileSync('new-file.txt', 'new file');
-
           let old = fs.statSync(tree.root + 'new-file.txt');
           tree.stop();
           tree.start();
@@ -622,7 +602,6 @@ describe('FSTree fs abstraction', function() {
 
           let changes = tree.changes();
 
-          console.log(changes);
           expect(changes).to.have.deep.property('0.0', 'change');
           expect(changes).to.have.deep.property('0.1', 'new-file.txt');
           expect(changes).to.have.deep.property('0.2.relativePath', 'new-file.txt');
