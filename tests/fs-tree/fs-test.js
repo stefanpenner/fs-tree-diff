@@ -296,7 +296,7 @@ describe('FSTree fs abstraction', function() {
       });
 
 
-      it.only('can change roots for source trees without providing absolute path', function() {
+      it('can change roots for source trees without providing absolute path', function() {
         fixturify.writeSync(`${ROOT}/my-directory/`, {
           a: {
             b: 'hello',
