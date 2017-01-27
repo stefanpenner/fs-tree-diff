@@ -34,8 +34,8 @@ var next = FSTree.fromPaths([
 ]);
 
 current.calculatePatch(next) === [
-  ['unlink', 'a.js'],
-  ['create', 'b.js']
+  ['unlink', 'a.js', entryA],
+  ['create', 'b.js', entryB]
 ];
 ```
 
@@ -71,11 +71,11 @@ Now, the above examples do not demonstrate `change` operations. This is because
 when providing only paths, we do not have sufficient information to check if
 one entry is merely different from another with the same relativePath.
 
-For this, FSTree supports more complex input structure. To demonstrate, We will
-use the [walk-sync](https://github.com/joliss/node-walk-sync) module.
-**(note: `walk-sync >= 0.2.7` is required`)** Which provides higher fidelity
-input, allowing FSTree to also detect changes. More on what an
-[entry from walkSync.entries is](https://github.com/joliss/node-walk-sync#entries)
+For this, FSTree supports more complex input structure. To demonstrate, we
+will use the [walk-sync](https://github.com/joliss/node-walk-sync) module,
+which provides higher fidelity input, allowing FSTree to also detect changes.
+(See also the documentation for
+[walkSync.entries](https://github.com/joliss/node-walk-sync#entries).)
 
 ```js
 var walkSync = require('walk-sync');
@@ -143,11 +143,11 @@ assume that the base directory has not changed.
 
 `FSTree.fromPaths`, `FSTree.fromEntries`, `FSTree.prototype.addPaths`,
 and `FSTree.prototype.addEntries` all validate their inputs.  Inputs
-must be sorted, path-unique (ie two entries with the same `relativePath` but
+must be sorted, path-unique (i.e. two entries with the same `relativePath` but
 different `size`s would still be illegal input) and include intermediate
 directories.
 
-For example, the following input is **invaild**
+For example, the following input is **invalid**
 
 ```js
 FSTree.fromPaths([
