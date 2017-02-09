@@ -320,24 +320,6 @@ describe('FSTree fs abstraction', function() {
           '${ROOT}/my-directory/a' of a non-source tree.
         `);
       });
-
-      it('throws if given a relative path for a root', function() {
-        fixturify.writeSync(`${ROOT}/my-directory`, {
-          a: {
-            b: 'hello',
-          },
-          a2: 'guten tag'
-        });
-
-        let tree = new FSTree({
-          root: `${ROOT}/my-directory`,
-          srcTree: true,
-        });
-
-        expect(function() {
-          tree.reread('my-directory');
-        }).to.throw(`Root must be an absolute path, tree.root: 'my-directory'`);
-      });
     });
 
     describe('.findByRelativePath', function () {
@@ -1387,7 +1369,7 @@ describe('FSTree fs abstraction', function() {
       it('returns a new tree with filters set', function() {
         expect(tree.include).to.eql([]);
         expect(tree.exclude).to.eql([]);
-        expect(tree.files).to.eql([]);
+        expect(tree.files).to.eql(null);
         expect(tree.cwd).to.eql('');
 
         expect(tree.filtered({ include: ['*.js'] }).include).to.eql(['*.js']);
@@ -1798,6 +1780,10 @@ describe('FSTree fs abstraction', function() {
 
       expect(changes).to.have.property('length', 0);
     });
+
+    //TODO add tests to test when srcTree = true
+    //TODO add tests for exclude when srcTree = true
+    //TODO add tests for files & include when srcTree = true
 
     describe('order', function() {
 
