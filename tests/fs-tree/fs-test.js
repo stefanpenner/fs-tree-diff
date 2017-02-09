@@ -9,6 +9,7 @@ const Entry = require('../../lib/entry');
 const md5hex = require('md5hex');
 const fixturify = require('fixturify');
 const rimraf = require('rimraf');
+const oneLine = require('common-tags').oneLine;
 
 const util = require('./util');
 const file = util.file;
@@ -179,6 +180,163 @@ describe('FSTree fs abstraction', function() {
           expect(grandchildTree.exclude).to.eql(lazyTree.exclude);
           expect(childTree.exclude).to.eql(lazyTree.exclude);
         });
+      });
+    });
+
+    describe('.srcTree', function() {
+      it('defaults to false', function() {
+        expect(new FSTree({
+          root: ROOT
+        })).to.have.property('srcTree', false);
+      });
+
+      it('can be specified as an option', function() {
+        expect(new FSTree({
+          srcTree: true,
+          root: ROOT,
+        })).to.have.property('srcTree', true);
+      });
+
+      it('is false for chdir projections', function() {
+        let tree = new FSTree({
+          root: ROOT,
+          srcTree: true,
+        });
+        tree._ensureEntriesPopulated();
+        expect(tree.srcTree).to.equal(true);
+        expect(tree.chdir('my-directory').srcTree).to.equal(false);
+        // projection does not affect parent
+        expect(tree.srcTree).to.equal(true);
+      });
+
+      it('is false for filtered projections', function() {
+        let tree = new FSTree({
+          root: ROOT,
+          srcTree: true,
+        });
+        expect(tree.srcTree).to.equal(true);
+        expect(tree.filtered({ include: ['**/*'] }).srcTree).to.equal(false);
+        // projection does not affect parent
+        expect(tree.srcTree).to.equal(true);
+      });
+    });
+
+    describe('.reread', function() {
+      it('resets entries for source trees', function() {
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: true,
+        });
+
+        expect(tree.walkPaths()).to.eql([]);
+
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        tree.reread();
+
+        expect(tree.walkPaths()).to.eql([
+          'a/',
+          'a/b',
+          'a2'
+        ]);
+      });
+
+      it('does not reset entries for non-source trees', function() {
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: false,
+        });
+
+        expect(tree.walkPaths()).to.eql([]);
+
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        tree.reread();
+
+        expect(tree.walkPaths()).to.eql([]);
+      });
+
+      it('can change roots for source trees', function() {
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: true,
+        });
+
+        expect(tree.walkPaths()).to.eql([
+          'a/',
+          'a/b',
+          'a2'
+        ]);
+
+        tree.reread(`${ROOT}/my-directory/a`);
+
+        expect(tree.walkPaths()).to.eql([
+          'b',
+        ]);
+
+        expect(tree.root).to.eql(`${ROOT}/my-directory/a/`);
+      });
+
+      it('throws if called with a new root for a non-source tree', function() {
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: false,
+        });
+
+        expect(tree.walkPaths()).to.eql([
+          'a/',
+          'a/b',
+          'a2'
+        ]);
+
+        expect(function() {
+          tree.reread(`${ROOT}/my-directory/a`);
+        }).to.throw(oneLine`
+          Cannot change root from '${ROOT}/my-directory/' to
+          '${ROOT}/my-directory/a' of a non-source tree.
+        `);
+      });
+
+      it('throws if given a relative path for a root', function() {
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: true,
+        });
+
+        expect(function() {
+          tree.reread('my-directory');
+        }).to.throw(`Root must be an absolute path, tree.root: 'my-directory'`);
       });
     });
 
@@ -746,6 +904,89 @@ describe('FSTree fs abstraction', function() {
       });
     });
 
+
+    describe('.mkdirpSync', function() {
+      it('-> directory (create)', function() {
+        expect(tree.changes()).to.eql([]);
+        expect(tree.mkdirpSync('new-directory/a/b/c/')).to.eql(undefined);
+
+        let changes = tree.changes();
+
+        expect(changes.map(e => e[0])).to.deep.equal(['mkdir','mkdir','mkdir','mkdir' ]);
+        expect(changes.map(e => e[1])).to.deep.equal(['new-directory','new-directory/a','new-directory/a/b','new-directory/a/b/c' ]);
+        expect(changes.map(e => e[2].relativePath)).to.deep.equal(['new-directory','new-directory/a','new-directory/a/b','new-directory/a/b/c' ]);
+
+        let operation = changes[3][0];
+        let relativePath = changes[3][1];
+        let entry = changes[3][2];
+
+        expect(operation).to.eql('mkdir');
+        expect(relativePath).to.eql('new-directory/a/b/c');
+        expect(entry).to.have.property('relativePath', 'new-directory/a/b/c');
+        expect(entry).to.have.property('mode');
+        expect(isDirectory(entry)).to.eql(true);
+        expect(entry).to.have.property('mtime');
+        expect(tree.changes()).to.have.property('length', 4);
+        expect(tree.statSync('new-directory').relativePath).to.eql('new-directory');
+        expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
+          'hello.txt',
+          'my-directory/',
+          'new-directory',
+          'new-directory/a',
+          'new-directory/a/b',
+          'new-directory/a/b/c'
+         ]);
+      });
+
+      it('directory/ -> directory/ (idempotence)', function testDir2Dir() {
+        let old = fs.statSync(`${tree.root}/my-directory`);
+        tree.mkdirpSync('my-directory/');
+
+        let current = fs.statSync(`${tree.root}/my-directory`);
+
+        expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
+        expect(old).to.have.property('mode', current.mode);
+        expect(old).to.have.property('size', current.size);
+        expect(tree.changes()).to.eql([]);
+
+        expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
+          'hello.txt',
+          'my-directory/',
+        ]);
+      });
+
+      it('directory/ -> directory (idempotence, path normalization)', function () {
+        let old = fs.statSync(`${tree.root}/my-directory`);
+
+        tree.mkdirpSync('my-directory');
+
+        let current = fs.statSync(`${tree.root}/my-directory`);
+
+        expect(old.mtime.getTime()).to.eql(current.mtime.getTime());
+        expect(old).to.have.property('mode', current.mode);
+        expect(old).to.have.property('size', current.size);
+        expect(tree.changes()).to.eql([]);
+
+        expect(tree.entries.map(e => e.relativePath)).to.deep.equal([
+          'hello.txt',
+          'my-directory/',
+        ]);
+      });
+
+
+      describe('start/stop', function() {
+        it('does error when stopped', function() {
+          tree.stop();
+          expect(function() {
+            tree.mkdirpSync('hello.txt');
+          }).to.throw(/NOPE/);
+          expect(function() {
+            tree.mkdirpSync('hello.txt');
+          }).to.throw(/mkdirp/);
+        });
+      });
+    });
+
     describe('.resolvePath', function() {
       it('resolves the empty string', function() {
         expect(tree.resolvePath('')).to.eql(ROOT);
@@ -1033,6 +1274,28 @@ describe('FSTree fs abstraction', function() {
             newTree.statSync('subdir')
           ).to.have.property('relativePath', 'my-directory/subdir');
         });
+
+        it('is respected by mkdirpSync', function() {
+          expect(tree.statSync('my-directory/subdir/a/b/c')).to.equal(null);
+          let newTree = tree.chdir('my-directory');
+          newTree.mkdirpSync('subdir/a/b/c');
+
+          expect(
+              tree.statSync('my-directory/subdir')
+          ).to.have.property('relativePath', 'my-directory/subdir');
+          expect(
+              newTree.statSync('subdir')
+          ).to.have.property('relativePath', 'my-directory/subdir');
+          expect(
+              tree.statSync('my-directory/subdir/a')
+          ).to.have.property('relativePath', 'my-directory/subdir/a');
+
+          expect(
+              tree.statSync('my-directory/subdir/a/b')
+          ).to.have.property('relativePath', 'my-directory/subdir/a/b');
+
+        });
+
 
         it('is respected by writeFileSync', function() {
           expect(fs.existsSync(`${ROOT}/my-directory/hello-again.txt`)).to.equal(false);
@@ -1461,6 +1724,8 @@ describe('FSTree fs abstraction', function() {
       });
     });
   });
+
+
 
   describe('changes', function() {
     let tree;
