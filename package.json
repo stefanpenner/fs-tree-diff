@@ -16,6 +16,7 @@
   "author": "Stefan Penner, David J. Hamilton, Chad Hietala",
   "license": "MIT",
   "dependencies": {
+    "can-symlink": "^1.0.0",
     "exists-sync": "^0.0.4",
     "fast-ordered-set": "^1.0.2",
     "fixturify": "^0.3.2",
