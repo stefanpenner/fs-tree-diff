@@ -87,7 +87,7 @@ describe('FSMergeTree', function () {
   });
 
   describe('_mergeRelativePaths', function () {
-    var ROOT = __dirname + '/tmp/fixtures';
+    let ROOT = __dirname + '/tmp/fixtures';
 
     beforeEach(function () {
       rimraf.sync(ROOT);
@@ -115,8 +115,8 @@ describe('FSMergeTree', function () {
         inputs: [`${ROOT}/a`, `${ROOT}/b`]
       });
 
-      var fileInfos = mergeTrees._mergeRelativePath(null, '');
-      var entries = mapBy(fileInfos, 'entry');
+      let fileInfos = mergeTrees._mergeRelativePath(null, '');
+      let entries = mapBy(fileInfos, 'entry');
 
       expect(mapBy(entries, 'relativePath')).to.deep.equal(['bar/', 'c/', 'e', 'qux']);
     });
@@ -134,8 +134,8 @@ describe('FSMergeTree', function () {
         inputs: [`${ROOT}/a`]
       });
 
-      var fileInfos = mergeTrees._mergeRelativePath(null, '');
-      var entries = mapBy(fileInfos, 'entry');
+      let fileInfos = mergeTrees._mergeRelativePath(null, '');
+      let entries = mapBy(fileInfos, 'entry');
 
       expect(mapBy(entries, 'relativePath')).to.deep.equal(['bar', 'baz', 'foo', 'qux']);
     })
@@ -153,8 +153,8 @@ describe('FSMergeTree', function () {
         inputs: [`${ROOT}/a`, `${ROOT}/b`]
       });
 
-      var fileInfos = mergeTrees._mergeRelativePath(null, '');
-      var entries = mapBy(fileInfos, 'entry');
+      let fileInfos = mergeTrees._mergeRelativePath(null, '');
+      let entries = mapBy(fileInfos, 'entry');
 
       expect(mapBy(entries, 'relativePath')).to.deep.equal(['bar/', 'baz/', 'foo/', 'qux/']);
     });
@@ -181,8 +181,8 @@ describe('FSMergeTree', function () {
       expect(() => mergeTrees._mergeRelativePath({overwrite: false}, '')).to.throw(
           /Merge error: file qux exists in .* and [^]* overwrite: true .*/);
 
-      var fileInfos = mergeTrees._mergeRelativePath({overwrite: true}, '');
-      var entries = mapBy(fileInfos, 'entry');
+      let fileInfos = mergeTrees._mergeRelativePath({overwrite: true}, '');
+      let entries = mapBy(fileInfos, 'entry');
       expect(mapBy(entries, 'relativePath')).to.deep.equal(['bar/', 'c/', 'qux']);
 
     });
