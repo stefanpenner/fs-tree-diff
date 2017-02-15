@@ -75,7 +75,6 @@ describe('FSTree fs abstraction', function() {
       it('shares _state', function() {
         expect(tree._state).to.eql('started');
         expect(childTree._state).to.eql('started');
-
         tree.stop();
 
         expect(tree._state).to.eql('stopped');
@@ -246,6 +245,8 @@ describe('FSTree fs abstraction', function() {
         ]);
       });
 
+
+
       it('does not reset entries for non-source trees', function() {
         let tree = new FSTree({
           root: `${ROOT}/my-directory`,
@@ -294,8 +295,9 @@ describe('FSTree fs abstraction', function() {
         expect(tree.root).to.eql(`${ROOT}/my-directory/a/`);
       });
 
-      it('throws if called with a new root for a non-source tree', function() {
-        fixturify.writeSync(`${ROOT}/my-directory`, {
+
+      it('can change roots for source trees without providing absolute path', function() {
+        fixturify.writeSync(`${ROOT}/my-directory/`, {
           a: {
             b: 'hello',
           },
@@ -303,22 +305,22 @@ describe('FSTree fs abstraction', function() {
         });
 
         let tree = new FSTree({
-          root: `${ROOT}/my-directory`,
-          srcTree: false,
+          root: `${ROOT}`,
+          srcTree: true,
         });
 
         expect(tree.walkPaths()).to.eql([
-          'a/',
-          'a/b',
-          'a2'
+          'hello.txt',
+          'my-directory/',
+          'my-directory/a/',
+          'my-directory/a/b',
+          'my-directory/a2'
         ]);
-
-        expect(function() {
-          tree.reread(`${ROOT}/my-directory/a`);
-        }).to.throw(oneLine`
-          Cannot change root from '${ROOT}/my-directory/' to
-          '${ROOT}/my-directory/a' of a non-source tree.
-        `);
+        //when the absolute path is not passed to reread, it should convert the path to absolute path
+        tree.reread(`tmp/fs-test-root/my-directory/a`);
+        expect(tree.walkPaths()).to.eql([
+          'b',
+        ]);
       });
     });
 
@@ -2000,7 +2002,6 @@ describe('FSTree fs abstraction', function() {
     })
 
     it('ignores nothing, if all match', function() {
-      debugger;
       let matched = tree.match({ include: ['**/*.js'] });
 
       expect(matched).to.have.property('length', 8);
