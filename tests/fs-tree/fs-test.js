@@ -1820,7 +1820,7 @@ describe('FSTree fs abstraction', function() {
             { relativePath: entry[0] === 'mkdir' ? entry[1] + '/' : entry[1],
               basePath,
               mode: entry[0] === 'mkdir' ? 16877 : 33188,
-              size: entry[2],
+              size: 0,
               mtime: 0,
               isDirectory: {},
             }];
@@ -1829,6 +1829,7 @@ describe('FSTree fs abstraction', function() {
 
       function makeComparable(changes){
         return changes.map(entry => {
+          entry[2].size = 0;
           entry[2].mtime = 0;
           entry[2].isDirectory = {};
           return entry;
@@ -1872,9 +1873,9 @@ describe('FSTree fs abstraction', function() {
         tree.include = ['**/one.css'];
         let changes = makeComparable(tree.changes());
         let expectedChanges = getExpectedChanges([
-          ['mkdir', 'a', 136],
-          ['mkdir', 'a/foo', 136],
-          ['create', 'a/foo/one.css', 0]], tree.root);
+          ['mkdir', 'a'],
+          ['mkdir', 'a/foo'],
+          ['create', 'a/foo/one.css']], tree.root);
 
         expect(changes).to.have.deep.equal(expectedChanges);
       });
@@ -1883,13 +1884,13 @@ describe('FSTree fs abstraction', function() {
         tree.exclude = ['**/*.js', '**/two.css'];
         let changes = makeComparable(tree.changes());
         let expectedChanges = getExpectedChanges([
-          ['mkdir', 'a', 136],
-          ['mkdir', 'a/foo', 136],
-          ['create', 'a/foo/one.css', 0],
-          ['mkdir', 'b', 102],
-          ['create', 'b/four.txt', 0],
-          ['create', 'goodbye.txt', 15],
-          ['create', 'hello.txt', 14]], tree.root);
+          ['mkdir', 'a'],
+          ['mkdir', 'a/foo'],
+          ['create', 'a/foo/one.css'],
+          ['mkdir', 'b'],
+          ['create', 'b/four.txt'],
+          ['create', 'goodbye.txt'],
+          ['create', 'hello.txt']], tree.root);
 
         expect(changes).to.have.deep.equal(expectedChanges);
       });
@@ -1899,11 +1900,11 @@ describe('FSTree fs abstraction', function() {
         tree.exclude = ['**/*.css', '**/*.txt'];
         let changes = makeComparable(tree.changes());
         let expectedChanges = getExpectedChanges([
-          ['mkdir', 'a', 136],
-          ['mkdir', 'a/bar', 136],
-          ['create', 'a/bar/two.js', 0],
-          ['mkdir', 'a/foo', 136],
-          ['create', 'a/foo/one.js', 0]], tree.root);
+          ['mkdir', 'a'],
+          ['mkdir', 'a/bar'],
+          ['create', 'a/bar/two.js'],
+          ['mkdir', 'a/foo'],
+          ['create', 'a/foo/one.js']], tree.root);
 
         expect(changes).to.have.deep.equal(expectedChanges);
       });
@@ -1912,8 +1913,8 @@ describe('FSTree fs abstraction', function() {
         tree.files= ['b/four.txt'];
         let changes = makeComparable(tree.changes());
         let expectedChanges = getExpectedChanges([
-          ['mkdir', 'b', 102],
-          ['create', 'b/four.txt', 0]], tree.root);
+          ['mkdir', 'b'],
+          ['create', 'b/four.txt']], tree.root);
 
         expect(changes).to.have.deep.equal(expectedChanges);
       });
