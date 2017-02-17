@@ -323,8 +323,6 @@ describe('FSTree fs abstraction', function() {
         ]);
       });
 
-
-
       it('throws if called with a new root for a non-source tree', function() {
         fixturify.writeSync(`${ROOT}/my-directory`, {
           a: {
@@ -1400,7 +1398,7 @@ describe('FSTree fs abstraction', function() {
       it('returns a new tree with filters set', function() {
         expect(tree.include).to.eql([]);
         expect(tree.exclude).to.eql([]);
-        expect(tree.files).to.eql([]);
+        expect(tree.files).to.eql(null);
         expect(tree.cwd).to.eql('');
 
         expect(tree.filtered({ include: ['*.js'] }).include).to.eql(['*.js']);
@@ -1810,6 +1808,116 @@ describe('FSTree fs abstraction', function() {
       let changes = tree.filtered(filter).changes();
 
       expect(changes).to.have.property('length', 0);
+    });
+
+    describe('srcTree is true', function() {
+      function getExpectedChanges(expectedEntries, basePath){
+        basePath = basePath.slice(0, -1);
+        return expectedEntries.map(entry => {
+          return [
+            entry[0],
+            entry[1],
+            { relativePath: entry[0] === 'mkdir' ? entry[1] + '/' : entry[1],
+              basePath,
+              mode: entry[0] === 'mkdir' ? 16877 : 33188,
+              size: 0,
+              mtime: 0,
+              isDirectory: {},
+            }];
+        });
+      };
+
+      function makeComparable(changes){
+        return changes.map(entry => {
+          entry[2].size = 0;
+          entry[2].mtime = 0;
+          entry[2].isDirectory = {};
+          return entry;
+        });
+      };
+
+      beforeEach(function() {
+        rimraf.sync(ROOT);
+        fs.mkdirpSync(ROOT);
+
+        fixturify.writeSync(ROOT, {
+          'hello.txt': "Hello, World!\n",
+          'goodbye.txt': 'Goodbye, World\n',
+          'a': {
+            'foo': {
+              'one.js': '',
+              'one.css': '',
+            },
+            'bar': {
+              'two.js': '',
+              'two.css': '',
+            }
+          },
+          'b': {
+            'four.txt': '',
+          },
+        });
+
+        tree = new FSTree({
+          entries: walkSync.entries(ROOT),
+          root: ROOT,
+          srcTree: true,
+        });
+      });
+
+      afterEach(function() {
+        fs.removeSync(ROOT);
+      });
+
+      it('include filters with parent dir', function() {
+        tree.include = ['**/one.css'];
+        let changes = makeComparable(tree.changes());
+        let expectedChanges = getExpectedChanges([
+          ['mkdir', 'a'],
+          ['mkdir', 'a/foo'],
+          ['create', 'a/foo/one.css']], tree.root);
+
+        expect(changes).to.have.deep.equal(expectedChanges);
+      });
+
+      it('exclude filters with parent dir', function() {
+        tree.exclude = ['**/*.js', '**/two.css'];
+        let changes = makeComparable(tree.changes());
+        let expectedChanges = getExpectedChanges([
+          ['mkdir', 'a'],
+          ['mkdir', 'a/foo'],
+          ['create', 'a/foo/one.css'],
+          ['mkdir', 'b'],
+          ['create', 'b/four.txt'],
+          ['create', 'goodbye.txt'],
+          ['create', 'hello.txt']], tree.root);
+
+        expect(changes).to.have.deep.equal(expectedChanges);
+      });
+
+      it('include and exclude filters with parent dir', function() {
+        tree.include = ['**/*.js'];
+        tree.exclude = ['**/*.css', '**/*.txt'];
+        let changes = makeComparable(tree.changes());
+        let expectedChanges = getExpectedChanges([
+          ['mkdir', 'a'],
+          ['mkdir', 'a/bar'],
+          ['create', 'a/bar/two.js'],
+          ['mkdir', 'a/foo'],
+          ['create', 'a/foo/one.js']], tree.root);
+
+        expect(changes).to.have.deep.equal(expectedChanges);
+      });
+
+      it('file filters with parent dir', function() {
+        tree.files= ['b/four.txt'];
+        let changes = makeComparable(tree.changes());
+        let expectedChanges = getExpectedChanges([
+          ['mkdir', 'b'],
+          ['create', 'b/four.txt']], tree.root);
+
+        expect(changes).to.have.deep.equal(expectedChanges);
+      });
     });
 
     describe('order', function() {
