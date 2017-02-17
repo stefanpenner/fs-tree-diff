@@ -322,6 +322,33 @@ describe('FSTree fs abstraction', function() {
           'b',
         ]);
       });
+
+      it('throws if called with a new root for a non-source tree', function() {
+        fixturify.writeSync(`${ROOT}/my-directory`, {
+          a: {
+            b: 'hello',
+          },
+          a2: 'guten tag'
+        });
+
+        let tree = new FSTree({
+          root: `${ROOT}/my-directory`,
+          srcTree: false,
+        });
+
+        expect(tree.walkPaths()).to.eql([
+          'a/',
+          'a/b',
+          'a2'
+        ]);
+
+        expect(function() {
+          tree.reread(`${ROOT}/my-directory/a`);
+        }).to.throw(oneLine`
+          Cannot change root from '${ROOT}/my-directory/' to
+          '${ROOT}/my-directory/a' of a non-source tree.
+        `);
+      });
     });
 
     describe('.findByRelativePath', function () {
