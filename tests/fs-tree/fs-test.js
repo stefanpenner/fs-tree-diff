@@ -1784,6 +1784,30 @@ describe('FSTree fs abstraction', function() {
     });
 
     describe('srcTree is true', function() {
+      function getExpectedChanges(expectedEntries, basePath){
+        basePath = basePath.slice(0, -1);
+        return expectedEntries.map(entry => {
+          return [
+            entry[0],
+            entry[1],
+            { relativePath: entry[0] === 'mkdir' ? entry[1] + '/' : entry[1],
+              basePath,
+              mode: entry[0] === 'mkdir' ? 16877 : 33188,
+              size: entry[2],
+              mtime: 0,
+              isDirectory: {},
+            }];
+        });
+      };
+
+      function makeComparable(changes){
+        return changes.map(entry => {
+          entry[2].mtime = 0;
+          entry[2].isDirectory = {};
+          return entry;
+        });
+      };
+
       beforeEach(function() {
         rimraf.sync(ROOT);
         fs.mkdirpSync(ROOT);
@@ -1805,7 +1829,7 @@ describe('FSTree fs abstraction', function() {
             'four.txt': '',
           },
         });
-        debugger;
+
         tree = new FSTree({
           entries: walkSync.entries(ROOT),
           root: ROOT,
@@ -1819,98 +1843,52 @@ describe('FSTree fs abstraction', function() {
 
       it('include filters with parent dir', function() {
         tree.include = ['**/one.css'];
-        let changes = tree.changes();
+        let changes = makeComparable(tree.changes());
+        let expectedChanges = getExpectedChanges([
+          ['mkdir', 'a', 136],
+          ['mkdir', 'a/foo', 136],
+          ['create', 'a/foo/one.css', 0]], tree.root);
 
-        expect(changes).to.have.property('length', 3);
-        expect(changes).to.have.deep.property('0.length', 3);
-        expect(changes).to.have.deep.property('0.0', 'mkdir');
-        expect(changes).to.have.deep.property('0.1', 'a');
-        expect(changes).to.have.deep.property('1.length', 3);
-        expect(changes).to.have.deep.property('1.0', 'mkdir');
-        expect(changes).to.have.deep.property('1.1', 'a/foo');
-        expect(changes).to.have.deep.property('2.length', 3);
-        expect(changes).to.have.deep.property('2.0', 'create');
-        expect(changes).to.have.deep.property('2.1', 'a/foo/one.css');
+        expect(changes).to.have.deep.equal(expectedChanges);
       });
 
       it('exclude filters with parent dir', function() {
         tree.exclude = ['**/*.js', '**/two.css'];
-        let changes = tree.changes();
+        let changes = makeComparable(tree.changes());
+        let expectedChanges = getExpectedChanges([
+          ['mkdir', 'a', 136],
+          ['mkdir', 'a/foo', 136],
+          ['create', 'a/foo/one.css', 0],
+          ['mkdir', 'b', 102],
+          ['create', 'b/four.txt', 0],
+          ['create', 'goodbye.txt', 15],
+          ['create', 'hello.txt', 14]], tree.root);
 
-        expect(changes).to.have.property('length', 7);
-        expect(changes).to.have.deep.property('0.length', 3);
-        expect(changes).to.have.deep.property('0.0', 'mkdir');
-        expect(changes).to.have.deep.property('0.1', 'a');
-        expect(changes).to.have.deep.property('1.length', 3);
-        expect(changes).to.have.deep.property('1.0', 'mkdir');
-        expect(changes).to.have.deep.property('1.1', 'a/foo');
-        expect(changes).to.have.deep.property('2.length', 3);
-        expect(changes).to.have.deep.property('2.0', 'create');
-        expect(changes).to.have.deep.property('2.1', 'a/foo/one.css');
-        expect(changes).to.have.deep.property('3.length', 3);
-        expect(changes).to.have.deep.property('3.0', 'mkdir');
-        expect(changes).to.have.deep.property('3.1', 'b');
-        expect(changes).to.have.deep.property('4.length', 3);
-        expect(changes).to.have.deep.property('4.0', 'create');
-        expect(changes).to.have.deep.property('4.1', 'b/four.txt');
-        expect(changes).to.have.deep.property('5.length', 3);
-        expect(changes).to.have.deep.property('5.0', 'create');
-        expect(changes).to.have.deep.property('5.1', 'goodbye.txt');
-        expect(changes).to.have.deep.property('6.length', 3);
-        expect(changes).to.have.deep.property('6.0', 'create');
-        expect(changes).to.have.deep.property('6.1', 'hello.txt');
-      });
-
-      it('include filters with parent dir', function() {
-        tree.include = ['**/one.css'];
-        let changes = tree.changes();
-
-        expect(changes).to.have.property('length', 3);
-        expect(changes).to.have.deep.property('0.length', 3);
-        expect(changes).to.have.deep.property('0.0', 'mkdir');
-        expect(changes).to.have.deep.property('0.1', 'a');
-        expect(changes).to.have.deep.property('1.length', 3);
-        expect(changes).to.have.deep.property('1.0', 'mkdir');
-        expect(changes).to.have.deep.property('1.1', 'a/foo');
-        expect(changes).to.have.deep.property('2.length', 3);
-        expect(changes).to.have.deep.property('2.0', 'create');
-        expect(changes).to.have.deep.property('2.1', 'a/foo/one.css');
+        expect(changes).to.have.deep.equal(expectedChanges);
       });
 
       it('include and exclude filters with parent dir', function() {
         tree.include = ['**/*.js'];
         tree.exclude = ['**/*.css', '**/*.txt'];
-        let changes = tree.changes();
+        let changes = makeComparable(tree.changes());
+        let expectedChanges = getExpectedChanges([
+          ['mkdir', 'a', 136],
+          ['mkdir', 'a/bar', 136],
+          ['create', 'a/bar/two.js', 0],
+          ['mkdir', 'a/foo', 136],
+          ['create', 'a/foo/one.js', 0]], tree.root);
 
-        expect(changes).to.have.property('length', 5);
-        expect(changes).to.have.deep.property('0.length', 3);
-        expect(changes).to.have.deep.property('0.0', 'mkdir');
-        expect(changes).to.have.deep.property('0.1', 'a');
-        expect(changes).to.have.deep.property('1.length', 3);
-        expect(changes).to.have.deep.property('1.0', 'mkdir');
-        expect(changes).to.have.deep.property('1.1', 'a/bar');
-        expect(changes).to.have.deep.property('2.length', 3);
-        expect(changes).to.have.deep.property('2.0', 'create');
-        expect(changes).to.have.deep.property('2.1', 'a/bar/two.js');
-        expect(changes).to.have.deep.property('3.length', 3);
-        expect(changes).to.have.deep.property('3.0', 'mkdir');
-        expect(changes).to.have.deep.property('3.1', 'a/foo');
-        expect(changes).to.have.deep.property('4.length', 3);
-        expect(changes).to.have.deep.property('4.0', 'create');
-        expect(changes).to.have.deep.property('4.1', 'a/foo/one.js');
+        expect(changes).to.have.deep.equal(expectedChanges);
       });
 
       it('file filters with parent dir', function() {
         tree.files= ['b/four.txt'];
-        let changes = tree.changes();
+        let changes = makeComparable(tree.changes());
+        let expectedChanges = getExpectedChanges([
+          ['mkdir', 'b', 102],
+          ['create', 'b/four.txt', 0]], tree.root);
 
-        expect(changes).to.have.property('length', 2);
-        expect(changes).to.have.deep.property('0.length', 3);
-        expect(changes).to.have.deep.property('0.0', 'mkdir');
-        expect(changes).to.have.deep.property('0.1', 'b');
-        expect(changes).to.have.deep.property('1.length', 3);
-        expect(changes).to.have.deep.property('1.0', 'create');
-        expect(changes).to.have.deep.property('1.1', 'b/four.txt');
+        expect(changes).to.have.deep.equal(expectedChanges);
       });
     });
 
