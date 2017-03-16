@@ -7,8 +7,8 @@
     "lib"
   ],
   "scripts": {
-    "test": "mocha tests/",
-    "test:debug": "mocha debug tests/"
+    "test": "mocha --recursive tests/",
+    "test:debug": "mocha --recursive debug tests/"
   },
   "keywords": [
     "broccoli"
@@ -16,16 +16,31 @@
   "author": "Stefan Penner, David J. Hamilton, Chad Hietala",
   "license": "MIT",
   "dependencies": {
+    "exists-sync": "^0.0.4",
+    "fast-ordered-set": "^1.0.2",
+    "fixturify": "^0.3.2",
     "heimdalljs-logger": "^0.1.7",
+    "lodash.merge": "^4.6.0",
+    "matcher-collection": "^1.0.4",
+    "md5hex": "^1.0.0",
+    "minimatch": "^3.0.3",
     "object-assign": "^4.1.0",
     "path-posix": "^1.0.0",
-    "symlink-or-copy": "^1.1.8"
+    "rimraf": "^2.5.4",
+    "symlink-or-copy": "^1.1.8",
+    "walk-sync": "^0.3.1"
   },
   "devDependencies": {
+    "broccoli-builder": "^0.18.0",
+    "broccoli-fixturify": "^0.3.0",
+    "broccoli-plugin": "^1.2.2",
     "chai": "^3.3.0",
+    "common-tags": "^1.4.0",
     "fs-extra": "^1.0.0",
+    "md5sum": "^0.9.0",
     "mocha": "^2.3.3",
-    "walk-sync": "^0.3.1"
+    "promise-map-series": "^0.2.3",
+    "rsvp": "^3.2.1"
   },
   "repository": {
     "type": "git",
