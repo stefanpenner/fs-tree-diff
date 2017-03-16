@@ -1198,6 +1198,13 @@ describe('FSTree fs abstraction', function() {
         expect(result.cwd).to.equal('my-directory/');
       });
 
+      it('to / returns root', function() {
+        let result = tree.chdir('/');
+        expect(result).to.equal(tree);
+
+        expect(result.cwd).to.equal('');
+      });
+
       describe('when path does not exist', function() {
         it('throws without allowEmpty: true', function() {
           expect(function() {
