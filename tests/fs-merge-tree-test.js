@@ -94,9 +94,9 @@ describe('FSMergeTree', function () {
       fs.mkdirpSync(ROOT);
     });
 
-    afterEach(function () {
-      fs.removeSync(ROOT);
-    });
+    // afterEach(function () {
+    //   fs.removeSync(ROOT);
+    // });
 
     it('returns an array of file infos', function () {
       fixturify.writeSync(`${ROOT}/a`, {
@@ -177,9 +177,9 @@ describe('FSMergeTree', function () {
       });
 
       expect(() => mergeTrees._mergeRelativePath(null, '')).to.throw(
-          /Merge error: file qux exists in .* and [^]* overwrite: true .*/);
+        /Merge error: file qux exists in .* and [^]* overwrite: true .*/);
       expect(() => mergeTrees._mergeRelativePath({overwrite: false}, '')).to.throw(
-          /Merge error: file qux exists in .* and [^]* overwrite: true .*/);
+        /Merge error: file qux exists in .* and [^]* overwrite: true .*/);
 
       let fileInfos = mergeTrees._mergeRelativePath({overwrite: true}, '');
       let entries = mapBy(fileInfos, 'entry');
@@ -204,11 +204,11 @@ describe('FSMergeTree', function () {
         inputs: [`${ROOT}/a`, `${ROOT}/b`],
       });
       expect(() => mergeTrees._mergeRelativePath(null, '')).to.throw(
-          /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
+        /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
       expect(() => mergeTrees._mergeRelativePath({overwrite: false}, '')).to.throw(
-          /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
+        /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
       expect(() => mergeTrees._mergeRelativePath({overwrite: true}, '')).to.throw(
-          /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
+        /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
     });
 
     it('refuses to honor conflicting capitalizations for file, with overwrite: false and true and null', function () {
@@ -224,11 +224,11 @@ describe('FSMergeTree', function () {
         inputs: [`${ROOT}/a`, `${ROOT}/b`],
       });
       expect(() => mergeTrees._mergeRelativePath(null, '')).to.throw(
-          /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
+        /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
       expect(() => mergeTrees._mergeRelativePath({overwrite: false}, '')).to.throw(
-          /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
+        /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
       expect(() => mergeTrees._mergeRelativePath({overwrite: true}, '')).to.throw(
-          /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
+        /Merge error: conflicting capitalizations:\nbar in .*\nBar in .*\nRemove/);
     });
 
     it('rejects directories colliding with files, with overwrite: false and true and null', function () {
@@ -247,12 +247,204 @@ describe('FSMergeTree', function () {
       });
 
       expect(() => mergeTrees._mergeRelativePath({overwrite: true}, '')).to.throw(
-          /Merge error: conflicting file types: bar is a directory in .* but a file in .*/);
+        /Merge error: conflicting file types: bar is a directory in .* but a file in .*/);
       expect(() => mergeTrees._mergeRelativePath({overwrite: false}, '')).to.throw(
-          /Merge error: conflicting file types: bar is a directory in .* but a file in .*/);
+        /Merge error: conflicting file types: bar is a directory in .* but a file in .*/);
       expect(() => mergeTrees._mergeRelativePath(null, '')).to.throw(
-          /Merge error: conflicting file types: bar is a directory in .* but a file in .*/);
+        /Merge error: conflicting file types: bar is a directory in .* but a file in .*/);
     });
 
+
+
+    it('merges directories with same directory names which are also symlinked', function () {
+
+      // a has symlinked vendor directory and c has non symlinked vendor
+      // Merging a, b and c
+
+      fixturify.writeSync(`${ROOT}/base/a`, {
+        bar: {
+          baz: 'hello',
+        }
+      });
+
+      fixturify.writeSync(`${ROOT}/base/b`, {
+        ban: 'hello'
+      });
+
+      fixturify.writeSync(`${ROOT}/base/c`, {
+        abc: 'hello',
+        vendor : {
+          efg : {
+            hij : 'hello'
+          }
+        }
+      });
+
+      fixturify.writeSync(`${ROOT}/other/vendor`, {
+        loader: {
+          foo: 'abc'
+        }
+      });
+
+      let inTree = new FSTree({
+        root: `${ROOT}/base`,
+        srcTree: true,
+      });
+
+      let outTree = new FSTree({
+        root: `${ROOT}/output`,
+        srcTree: true,
+      });
+
+      fs.mkdirpSync(ROOT + '/output');
+
+      //Symlinking other/vendor (source)  to a/vendor (dest)
+      inTree.symlinkSync(`${ROOT}/other/vendor` , 'a/vendor', true);
+
+      let intermediateMerge = new FSMergeTree({
+        inputs: [`${ROOT}/base/a`,  `${ROOT}/base/b`, `${ROOT}/base/c`],
+      });
+
+      // Merging a , b and c
+      let changes = intermediateMerge.changes(null);
+
+      //changes should have entries of all files and folders
+      applyChanges(changes, outTree);
+
+      //TODO: check if the dirs are merged in output folder and all entries are present in changes
+
+    });
+
+
+    it('merges directories which are symlinked', function () {
+
+      fixturify.writeSync(`${ROOT}/base/a`, {
+      });
+
+      fixturify.writeSync(`${ROOT}/base/b`, {
+      });
+
+      fixturify.writeSync(`${ROOT}/other/vendor1`, {
+        bar: {
+          baz: 'hello',
+        },
+        loader: {
+          foo: 'abc'
+        }
+      });
+
+      fixturify.writeSync(`${ROOT}/other/vendor2`, {
+        abc: 'hello', vendor: {
+          efg: {
+            hij: 'hello'
+          }
+        }
+      });
+
+
+      let inTree = new FSTree({
+        root: `${ROOT}/base`,
+        srcTree: true,
+      });
+
+      let outTree = new FSTree({
+        root: `${ROOT}/output`,
+        srcTree: true,
+      });
+
+      fs.mkdirpSync(ROOT + '/output');
+
+
+      //Symlinking other/vendor (source)  to a/index (dest)
+      inTree.symlinkSync(`${ROOT}/other/vendor1` , 'a/index1', true);
+      inTree.symlinkSync(`${ROOT}/other/vendor2` , 'b/index2', true);
+
+      let intermediateMerge = new FSMergeTree({
+        inputs: [`${ROOT}/base/a`,  `${ROOT}/base/b`],
+      });
+
+      // Merging a , b
+      let changes = intermediateMerge.changes(null);
+      applyChanges(changes, outTree);
+
+      let entries = changes.map(e => {
+        return e[2];
+      });
+
+      let newTree = FSTree.fromEntries(entries);
+
+      fixturify.writeSync(`${ROOT}/base/c`, {
+        rst: 'hello',
+        index2 : {
+          lmn : {
+            opq : 'hello'
+          }
+        }
+      });
+
+      let outputMergeTree = new FSMergeTree({
+        inputs: [newTree,  `${ROOT}/base/c`],
+      });
+
+      changes = outputMergeTree.changes(null);
+      applyChanges(changes, outTree);
+
+      //TODO: index2 should contain lmn, lmn/opq, vendor, vendor/efg, vendor/efg,hij, abc
+
+    });
   });
+
+
+
+  function applyChanges(changes, outTree) {
+
+    changes.forEach(function(change) {
+
+      var operation = change[0];
+      var relativePath = change[1];
+      var entry = change[2];
+      var inputFilePath = entry && entry.basePath + '/' + relativePath;
+
+      switch(operation) {
+        case 'mkdir':     {
+          if (entry.linkDir) {
+            return outTree.symlinkSync(inputFilePath, relativePath, entry.linkDir);
+          } else {
+            return outTree.mkdirSync(relativePath);
+          }
+        }
+        case 'rmdir':   {
+          if (entry.linkDir) {
+            return outTree.unlinkSync(relativePath);
+          } else {
+            return outTree.rmdirSync(relativePath);
+          }
+        }
+        case 'unlink':  {
+          return outTree.unlinkSync(relativePath);
+        }
+        case 'create':    {
+          return outTree.symlinkSync(inputFilePath, relativePath);
+        }
+        case 'change':    {
+          if (entry.isDirectory()) {
+            if (entry.linkDir) {
+              outTree.rmdirSync(relativePath);
+              outTree.symlinkSync(inputFilePath, relativePath , entry.linkDir);
+            } else {
+              outTree.unlinkSync(relativePath);
+              outTree.mkdirSync(relativePath);
+              return
+            }
+          } else {
+            // file changed
+            outTree.unlinkSync(relativePath);
+            return outTree.symlinkSync(inputFilePath, relativePath);
+          }
+
+        }
+      }
+    }, this);
+  };
+
 });

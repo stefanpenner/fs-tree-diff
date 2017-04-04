@@ -641,6 +641,77 @@ describe('FSTree fs abstraction', function() {
         ]);
       });
 
+
+      it('from input', function() {
+        fixturify.writeSync(`${ROOT}/a`, {
+          bar: {
+            baz: 'hello',
+          }
+        });
+
+        let input = new FSTree({
+          entries: walkSync.entries(`${ROOT}`),
+          root: `${ROOT}`,
+        });
+
+        fs.mkdirSync(`${ROOT}/base`);
+
+        let out = new FSTree({
+          root: `${ROOT}/base`,
+        });
+
+        out.symlinkSyncFromInput(input, `${input.root}/a`, 'b')
+
+
+        let result = out.findByRelativePath('b/bar/baz');
+        let entries = result.tree.walkEntries();
+
+        expect(entries[0].relativePath).to.eql("b/bar");
+        expect(entries[1].relativePath).to.eql("b/bar/baz");
+
+      });
+
+
+
+
+      it.only('from input where destDir is slash', function() {
+        fixturify.writeSync(`${ROOT}/a`, {
+          bar: {
+            baz: 'hello',
+          }
+        });
+
+        let input = new FSTree({
+          entries: walkSync.entries(`${ROOT}`),
+          root: `${ROOT}`,
+        });
+
+        fs.mkdirSync(`${ROOT}/base`);
+
+        let out = new FSTree({
+          root: `${ROOT}/base`,
+        });
+
+        out.symlinkSyncFromInput(input, `${input.root}/a`, '/')
+
+
+        let result = out.findByRelativePath('b/bar/baz');
+        let entries = result.tree.walkEntries();
+
+        expect(entries[0].relativePath).to.eql("b/bar");
+        expect(entries[1].relativePath).to.eql("b/bar/baz");
+
+      });
+
+
+
+
+
+
+
+
+
+
       describe('idempotent', function() {
         it('is idempotent files added this session', function() {
           fs.symlinkSync(`${tree.root}hello.txt`, `${tree.root}hi`);
