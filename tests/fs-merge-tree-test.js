@@ -7,6 +7,7 @@ const path = require('path');
 const fixturify = require('fixturify');
 const rimraf = require('rimraf');
 const fs = require('fs-extra');
+const walkSync = require('walk-sync');
 
 function mapBy(array, property) {
   return array.map(function (item) {
@@ -256,147 +257,90 @@ describe('FSMergeTree', function () {
 
 
 
-    it('merges directories with same directory names which are also symlinked', function () {
+    describe('verifies merge and changes function', function () {
 
-      // a has symlinked vendor directory and c has non symlinked vendor
-      // Merging a, b and c
+      it('merges directories with same name with one symlinked directory', function () {
 
-      fixturify.writeSync(`${ROOT}/base/a`, {
-        bar: {
-          baz: 'hello',
-        }
-      });
-
-      fixturify.writeSync(`${ROOT}/base/b`, {
-        ban: 'hello'
-      });
-
-      fixturify.writeSync(`${ROOT}/base/c`, {
-        abc: 'hello',
-        vendor : {
-          efg : {
-            hij : 'hello'
+        fixturify.writeSync(`${ROOT}/other/vendor1`, {
+          bar: {
+            baz: 'hello',
+          }, loader: {
+            foo: 'abc'
           }
-        }
-      });
+        });
 
-      fixturify.writeSync(`${ROOT}/other/vendor`, {
-        loader: {
-          foo: 'abc'
-        }
-      });
-
-      let inTree = new FSTree({
-        root: `${ROOT}/base`,
-        srcTree: true,
-      });
-
-      let outTree = new FSTree({
-        root: `${ROOT}/output`,
-        srcTree: true,
-      });
-
-      fs.mkdirpSync(ROOT + '/output');
-
-      //Symlinking other/vendor (source)  to a/vendor (dest)
-      inTree.symlinkSync(`${ROOT}/other/vendor` , 'a/vendor', true);
-
-      let intermediateMerge = new FSMergeTree({
-        inputs: [`${ROOT}/base/a`,  `${ROOT}/base/b`, `${ROOT}/base/c`],
-      });
-
-      // Merging a , b and c
-      let changes = intermediateMerge.changes(null);
-
-      //changes should have entries of all files and folders
-      applyChanges(changes, outTree);
-
-      //TODO: check if the dirs are merged in output folder and all entries are present in changes
-
-    });
-
-
-    it('merges directories which are symlinked', function () {
-
-      fixturify.writeSync(`${ROOT}/base/a`, {
-      });
-
-      fixturify.writeSync(`${ROOT}/base/b`, {
-      });
-
-      fixturify.writeSync(`${ROOT}/other/vendor1`, {
-        bar: {
-          baz: 'hello',
-        },
-        loader: {
-          foo: 'abc'
-        }
-      });
-
-      fixturify.writeSync(`${ROOT}/other/vendor2`, {
-        abc: 'hello', vendor: {
-          efg: {
-            hij: 'hello'
+        fixturify.writeSync(`${ROOT}/other/vendor2`, {
+          abc: 'hello', def: {
+            efg: {
+              hij: 'hello'
+            }
           }
-        }
-      });
+        });
 
+        let inTree = new FSTree({
+          root: `${ROOT}`, entries: walkSync.entries(`${ROOT}`),
+        });
 
-      let inTree = new FSTree({
-        root: `${ROOT}/base`,
-        srcTree: true,
-      });
+        let outTree = new FSTree({
+          root: `${ROOT}/output`, srcTree: true,
+        });
 
-      let outTree = new FSTree({
-        root: `${ROOT}/output`,
-        srcTree: true,
-      });
+        fs.mkdirpSync(ROOT + '/output');
 
-      fs.mkdirpSync(ROOT + '/output');
+        //Symlinking other/vendor (source)  to a/index (dest)
 
+        outTree.symlinkSyncFromEntry(inTree, `other/vendor1`, 'a/index1');
+        outTree.symlinkSyncFromEntry(inTree, `other/vendor2`, 'b/index2');
 
-      //Symlinking other/vendor (source)  to a/index (dest)
-      inTree.symlinkSync(`${ROOT}/other/vendor1` , 'a/index1', true);
-      inTree.symlinkSync(`${ROOT}/other/vendor2` , 'b/index2', true);
+        let intermediateMerge = new FSMergeTree({
+          inputs: [`${ROOT}/output/a`, `${ROOT}/output/b`],
+        });
 
-      let intermediateMerge = new FSMergeTree({
-        inputs: [`${ROOT}/base/a`,  `${ROOT}/base/b`],
-      });
+        // Merging a , b
+        let changes = intermediateMerge.changes(null);
+        applyChanges(changes, outTree);
 
-      // Merging a , b
-      let changes = intermediateMerge.changes(null);
-      applyChanges(changes, outTree);
+        let entries = changes.map(e => {
+          return e[2];
+        });
 
-      let entries = changes.map(e => {
-        return e[2];
-      });
+        let newTree = FSTree.fromEntries(entries);
 
-      let newTree = FSTree.fromEntries(entries);
-
-      fixturify.writeSync(`${ROOT}/base/c`, {
-        rst: 'hello',
-        index2 : {
-          lmn : {
-            opq : 'hello'
+        fixturify.writeSync(`${ROOT}/base/c`, {
+          rst: 'hello', index2: {
+            lmn: {
+              opq: 'hello'
+            }
           }
-        }
+        });
+
+        let outputMergeTree = new FSMergeTree({
+          inputs: [newTree, `${ROOT}/base/c`],
+        });
+
+        // Merging a and b (symlinked dirs) from previous merge with c. With b and c having 'index2' as one of their child.
+        changes = outputMergeTree.changes(null);
+
+        let outTree1 = new FSTree({
+          root: `${ROOT}/output1`, srcTree: true,
+        });
+
+        fs.mkdirpSync(ROOT + '/output1');
+
+        // Applying the changes in disk
+        applyChanges(changes, outTree1);
+
+        expect(fixturify.readSync(`${ROOT}/output1/index2`)).to.eql({ abc: 'hello',
+          def: { efg: { hij: 'hello' } },
+          lmn: { opq: 'hello' } });
       });
 
-      let outputMergeTree = new FSMergeTree({
-        inputs: [newTree,  `${ROOT}/base/c`],
-      });
-
-      changes = outputMergeTree.changes(null);
-      applyChanges(changes, outTree);
-
-      //TODO: index2 should contain lmn, lmn/opq, vendor, vendor/efg, vendor/efg,hij, abc
-
+      //TODO: REMOVE OUTPUT DIRECTORY
     });
   });
 
 
-
-  function applyChanges(changes, outTree) {
+  function applyChanges(changes,  outTree) {
 
     changes.forEach(function(change) {
 
@@ -408,7 +352,7 @@ describe('FSMergeTree', function () {
       switch(operation) {
         case 'mkdir':     {
           if (entry.linkDir) {
-            return outTree.symlinkSync(inputFilePath, relativePath, entry.linkDir);
+            return outTree.symlinkSyncFromEntry(entry._projection.tree, relativePath, relativePath);
           } else {
             return outTree.mkdirSync(relativePath);
           }
@@ -424,6 +368,7 @@ describe('FSMergeTree', function () {
           return outTree.unlinkSync(relativePath);
         }
         case 'create':    {
+
           return outTree.symlinkSync(inputFilePath, relativePath);
         }
         case 'change':    {
