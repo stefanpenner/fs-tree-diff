@@ -837,6 +837,37 @@ describe('FSTree fs abstraction', function() {
 
     describe('.symlinkSyncFromEntry', function() {
 
+      it('symlink from root to destDir', function() {
+        fixturify.writeSync(`${ROOT}`, {
+          bar: {
+            baz: 'hello',
+          }
+        });
+
+        let input = new FSTree({
+          entries: walkSync.entries(`${ROOT}`),
+          root: `${ROOT}`,
+        });
+
+        fs.mkdirSync(`${ROOT}/base`);
+
+        let out = new FSTree({
+          root: `${ROOT}/base`,
+        });
+
+        out.symlinkSyncFromEntry(input, undefined, 'b')
+
+        expect(out.entries[0]._projection.entry).to.eql("root");
+        expect(out.entries[0]._projection.tree.entries.map(e => e.relativePath)).to.eql([
+          'bar/', 'bar/baz', 'hello.txt', 'my-directory/'
+        ]);
+
+
+      });
+
+
+
+
       it('when only top level directory is symlinked', function() {
         fixturify.writeSync(`${ROOT}/a`, {
           bar: {
@@ -995,7 +1026,11 @@ describe('FSTree fs abstraction', function() {
         const treeB = new FSTree({entries: walkSync.entries(`${ROOT}/b`), root: `${ROOT}/b`});
         const treeC = new FSTree({entries: walkSync.entries(`${ROOT}/c`), root: `${ROOT}/c`});
 
+        //C's bar is linked to B's bar
+        //C will now have bar and baz
         treeC.symlinkSyncFromEntry(treeB, 'bar', 'bar');
+        //C's bar/baz/def is linked to A's abc
+
         treeC.symlinkSyncFromEntry(treeA, 'abc', 'bar/baz/def');
 
         expect(treeC.findByRelativePath('bar/baz/def/xyz').index).to.be.greaterThan(-1);
@@ -1671,6 +1706,51 @@ describe('FSTree fs abstraction', function() {
         });
       });
 
+
+
+
+      describe('from symlinks with srcRelativePath undefined', function() {
+        let symlinkTree;
+        beforeEach(function() {
+          rimraf.sync(ROOT);
+          fs.mkdirpSync(ROOT);
+
+          fixturify.writeSync(ROOT, {
+            'a': {
+              'bar': {
+                'baz.txt': 'baz'
+              }
+            },
+          });
+
+          tree = new FSTree({
+            entries: walkSync.entries(`${ROOT}`),
+            root: `${ROOT}`,
+          });
+
+          fixturify.writeSync(ROOT, {
+            'b' : { }
+          });
+
+          symlinkTree = new FSTree({
+            entries: walkSync.entries(`${ROOT}/b`),
+            root: `${ROOT}/b`,
+          });
+        });
+
+        afterEach(function() {
+          fs.removeSync(ROOT);
+        });
+
+        it('should return the correct entries', function() {
+          symlinkTree.symlinkSyncFromEntry(tree, undefined, 'cat');
+
+          expect(symlinkTree.readdirSync('cat')).to.eql([
+            'a'
+          ]);
+
+        });
+      });
 
 
     });
