@@ -260,7 +260,7 @@ describe('FSMergeTree', function () {
 
 
 
-    describe('verifies merge and changes function', function () {
+    describe('verifies merge and changes function,', function () {
 
       it('merges directories with same name with one symlinked directory', function () {
 
@@ -287,7 +287,7 @@ describe('FSMergeTree', function () {
         });
 
         let outTree = new FSTree({
-          root: `${ROOT}/output`, srcTree: true,
+          root: `${ROOT}/output`,
         });
 
         fs.mkdirpSync(ROOT + '/output');
@@ -303,7 +303,7 @@ describe('FSMergeTree', function () {
           inputs: [`${ROOT}/output/a`, `${ROOT}/output/b`],
         });
 
-        // // Merging a , b
+        //  Merging a , b
          let changes = intermediateMerge.changes(null);
          applyChanges(changes, outTree);
 
@@ -329,7 +329,7 @@ describe('FSMergeTree', function () {
         changes = outputMergeTree.changes(null);
 
         let outTree1 = new FSTree({
-          root: `${ROOT}/output1`, srcTree: true,
+          root: `${ROOT}/output1`,
         });
 
         fs.mkdirpSync(ROOT + '/output1');
@@ -342,17 +342,81 @@ describe('FSMergeTree', function () {
           lmn: { opq: 'hello' } });
       });
 
+
+
+      it('merges directories with same name with both symlinked directory', function () {
+
+        fixturify.writeSync(`${ROOT}/a`, {
+            baz: 'hello',
+        });
+
+        fixturify.writeSync(`${ROOT}/b`, {
+          bar: 'hello',
+        });
+
+
+        let inTree = new FSTree({
+          root: `${ROOT}`, entries: walkSync.entries(`${ROOT}`),
+        });
+
+
+
+        let tree1 = new FSTree({
+          root: `${ROOT}/output1`,
+        });
+
+        let tree2 = new FSTree({
+          root: `${ROOT}/output2`,
+        });
+
+
+        fs.mkdirpSync(ROOT + '/output1');
+        fs.mkdirpSync(ROOT + '/output2');
+
+        //Symlinking other/vendor (source)  to a/index (dest)
+
+        tree1.symlinkSyncFromEntry(inTree, `a`, 'c');
+        tree2.symlinkSyncFromEntry(inTree, `b`, 'c');
+
+
+
+        let mergeTree = new FSMergeTree({
+          inputs: [tree1, tree2],
+        });
+
+        // Merging a , b
+        let changes = mergeTree.changes(null);
+
+
+        let outTree = new FSTree({
+          root: `${ROOT}/output3`,
+        });
+
+        fs.mkdirpSync(ROOT + '/output3');
+
+        // Applying the changes in disk
+        applyChanges(changes, outTree);
+
+        expect(fixturify.readSync(`${ROOT}/output3/`)).to.eql({ c: { bar: 'hello', baz: 'hello' } });
+
+
     });
   });
 
-function applyChanges(changes,  outTree) {
+});
+
+
+
+    function applyChanges(changes,  outTree) {
 
     changes.forEach(function(change) {
 
       var operation = change[0];
       var relativePath = change[1];
       var entry = change[2];
-      var inputFilePath = entry && entry.basePath + '/' + relativePath;
+     // var inputFilePath = entry && entry.basePath + '/' + relativePath;
+      var inputFilePath = entry && entry.absolutePath;
+
 
       switch(operation) {
         case 'mkdir':     {
