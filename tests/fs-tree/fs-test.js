@@ -662,8 +662,6 @@ describe('FSTree fs abstraction', function() {
           // c is linked to bar
           symlinkTree.symlinkSyncFromEntry(tree, `bar`, 'c');
 
-          //symlinkTree.writeFileSync('c/new-file.txt', 'new file');
-
           expect(symlinkTree.entries[0]._projection.tree.entries.map(e => e.relativePath)).to.eql(
             ['bar/', 'bar/baz.txt',]);
           expect(symlinkTree.findByRelativePath('c/baz.txt').index).to.be.gt(-1);
@@ -979,6 +977,7 @@ describe('FSTree fs abstraction', function() {
         });
 
         expect(function() {
+          debugger;
           out.symlinkSyncFromEntry(input, `a`, 'b')
         }).to.throw(/EEXIST/);
 
@@ -1449,18 +1448,6 @@ describe('FSTree fs abstraction', function() {
         });
       });
 
-      // it.only('create a directory that has been self symlinked)', function () {
-      //
-      //   tree.symlinkSyncFromEntry(tree, `my-directory`, 'link')
-      //
-      //   debugger;
-      //   tree.mkdirSync('link/new-directory');
-      //
-      //   expect(tree.findByRelativePath('my-directory/new-directory').index).to.be.gt(-1);
-      //   expect(tree.findByRelativePath('link/new-directory').index).to.be.gt(-1);
-      //
-      // });
-
     });
 
 
@@ -1545,20 +1532,6 @@ describe('FSTree fs abstraction', function() {
           }).to.throw(/mkdirp/);
         });
       });
-
-
-      // it('create a bunch of directories with top level directory being symlinked)', function () {
-      //
-      //   tree.symlinkSyncFromEntry(tree, `my-directory`, 'link')
-      //
-      //   tree.mkdirpSync('link/subdir1/subdir2/subdir3');
-      //
-      //   expect(tree.findByRelativePath('my-directory/subdir1/subdir2/subdir3').index).to.be.gt(-1);
-      //   expect(tree.findByRelativePath('link/subdir1/subdir2/subdir3').index).to.be.gt(-1);
-      //
-      // });
-
-
 
     });
 
@@ -1742,9 +1715,7 @@ describe('FSTree fs abstraction', function() {
       });
 
 
-
-
-      describe('from symlinks with srcRelativePath undefined', function() {
+      describe('from symlinks with srcRelativePath as /', function() {
         let symlinkTree;
         beforeEach(function() {
           rimraf.sync(ROOT);
@@ -2542,7 +2513,7 @@ describe('FSTree fs abstraction', function() {
       });
 
       it('include filters with parent dir', function() {
-        tree.include = ['**/**.css'];
+        tree.include = ['**/one.css'];
         let changes = makeComparable(tree.changes());
 
         let expectedChanges = getExpectedChanges([
@@ -2606,7 +2577,7 @@ describe('FSTree fs abstraction', function() {
           ['mkdir', 'd/foo'],
           ['create', 'd/foo/one.css']], tree.root);
 
-        expect(changes).to.have.deep.equal(expectedChanges);
+       expect(changes).to.have.deep.equal(expectedChanges);
       });
 
 
@@ -2630,14 +2601,13 @@ describe('FSTree fs abstraction', function() {
         out.include = ['**/**.css'];
         let patches= out.changes();
 
-        console.log(patches);
         let changes = makeComparable(patches);
         let expectedChanges = getExpectedChanges([
-          ['mkdir', 'd'],
-          ['mkdir', 'd/bar'],
-          ['create', 'd/bar/two.css'],
-          ['mkdir', 'd/foo'],
-          ['create', 'd/foo/one.css']], tree.root);
+          ['mkdir', 'f'],
+          ['mkdir', 'f/bar'],
+          ['create', 'f/bar/two.css'],
+          ['mkdir', 'f/foo'],
+          ['create', 'f/foo/one.css']], tree.root);
 
         expect(changes).to.have.deep.equal(expectedChanges);
       });
@@ -2734,6 +2704,8 @@ describe('FSTree fs abstraction', function() {
         tree.rmdirSync('a');
 
         let changes = tree.changes();
+
+        console.log(changes);
 
         expect(changes).to.have.property('length', 4);
         expect(changes).to.have.deep.property('0.length', 3);

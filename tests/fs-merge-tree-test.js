@@ -328,6 +328,9 @@ describe('FSMergeTree', function () {
         // Merging a and b (symlinked dirs) from previous merge with c. With b and c having 'index2' as one of their child.
         changes = outputMergeTree.changes(null);
 
+        console.log(changes);
+
+
         let outTree1 = new FSTree({
           root: `${ROOT}/output1`,
         });
@@ -336,6 +339,8 @@ describe('FSMergeTree', function () {
 
         // Applying the changes in disk
         applyChanges(changes, outTree1);
+
+
 
         expect(fixturify.readSync(`${ROOT}/output1/index2`)).to.eql({ abc: 'hello',
           def: { efg: { hij: 'hello' } },
@@ -384,8 +389,10 @@ describe('FSMergeTree', function () {
           inputs: [tree1, tree2],
         });
 
+        debugger;
         // Merging a , b
         let changes = mergeTree.changes(null);
+        console.log(changes);
 
 
         let outTree = new FSTree({
