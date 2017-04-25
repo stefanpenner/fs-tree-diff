@@ -1994,7 +1994,13 @@ describe('FSTree fs abstraction', function() {
           newTree.writeFileSync('ohai.txt', 'yes hello again');
 
           let treeChanges = tree.changes();
+          console.log(treeChanges)
+          console.log("------")
+
           let newTreeChanges = newTree.changes();
+          console.log(newTreeChanges)
+          console.log("------")
+
           expect(treeChanges).to.not.eql(newTreeChanges);
 
           expect(newTreeChanges).to.have.deep.property('0.0', 'create');
@@ -2549,7 +2555,7 @@ describe('FSTree fs abstraction', function() {
       });
 
 
-      it('include filters with nested symlinked dir', function() {
+      it.only('include filters with nested symlinked dir', function() {
 
         fs.mkdirSync(`${ROOT}/c`);
         fs.mkdirSync(`${ROOT}/e`);
@@ -2567,18 +2573,58 @@ describe('FSTree fs abstraction', function() {
         out2.symlinkSyncFromEntry(out1, `f`, 'd')
 
         out2.include = ['**/**.css'];
+        debugger;
         let patches= out2.changes();
 
-        let changes = makeComparable(patches);
-        let expectedChanges = getExpectedChanges([
-          ['mkdir', 'd'],
-          ['mkdir', 'd/bar'],
-          ['create', 'd/bar/two.css'],
-          ['mkdir', 'd/foo'],
-          ['create', 'd/foo/one.css']], tree.root);
+        console.log(patches);
 
-       expect(changes).to.have.deep.equal(expectedChanges);
+       // let changes = makeComparable(patches);
+       //  let expectedChanges = getExpectedChanges([
+       //    ['mkdir', 'd'],
+       //    ['mkdir', 'd/bar'],
+       //    ['create', 'd/bar/two.css'],
+       //    ['mkdir', 'd/foo'],
+       //    ['create', 'd/foo/one.css']], tree.root);
+       //
+       // expect(changes).to.have.deep.equal(expectedChanges);
       });
+
+
+
+      // it.only('include filters with nested symlinked dir and cwd', function() {
+      //
+      //   fs.mkdirSync(`${ROOT}/c`);
+      //   fs.mkdirSync(`${ROOT}/e`);
+      //
+      //   let out1 = new FSTree({
+      //     root: `${ROOT}/c`,
+      //   });
+      //
+      //   out1.symlinkSyncFromEntry(tree, `a`, 'f')
+      //
+      //   let out2 = new FSTree({
+      //     root: `${ROOT}/e`,
+      //   });
+      //
+      //   out2.symlinkSyncFromEntry(out1, `f`, 'd')
+      //
+      //   out2.include = ['**/**.css'];
+      //   debugger;
+      //   let patches= out2.changes();
+      //
+      //   console.log(patches);
+      //
+      //   //  let changes = makeComparable(patches);
+      //   //   let expectedChanges = getExpectedChanges([
+      //   //     ['mkdir', 'd'],
+      //   //     ['mkdir', 'd/bar'],
+      //   //     ['create', 'd/bar/two.css'],
+      //   //     ['mkdir', 'd/foo'],
+      //   //     ['create', 'd/foo/one.css']], tree.root);
+      //   //
+      //   //  expect(changes).to.have.deep.equal(expectedChanges);
+      // });
+
 
 
       it('include filters with multiple symlinked dir', function() {
