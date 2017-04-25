@@ -23,6 +23,7 @@ let fsTree;
 
 describe('FSTree fs abstraction', function() {
   let ROOT = path.resolve('tmp/fs-test-root/');
+  let ROOT2 = path.resolve('tmp/fs-test-root2/');
 
   const originalNow = Date.now;
 
@@ -1568,6 +1569,7 @@ describe('FSTree fs abstraction', function() {
         expect(myDir.resolvePath('..')).to.eql(ROOT);
 
         expect(function() {
+          debugger;
           myDir.resolvePath('../../');
         }).to.throw(`Invalid path: '../../' not within dir 'my-directory/' of root '${ROOT}/'`);
       });
@@ -1878,8 +1880,9 @@ describe('FSTree fs abstraction', function() {
             tree.statSync('my-directory/ohai.txt')
          // ).to.have.property('relativePath', 'my-directory/ohai.txt')
           ).to.have.property('mode', 0)
-
+          debugger;
           let newTree = tree.chdir('my-directory');
+          debugger;
           newTree.unlinkSync('ohai.txt');
 
           expect(tree.statSync('my-directory/ohai.txt')).to.equal(null);
@@ -2005,7 +2008,7 @@ describe('FSTree fs abstraction', function() {
 
           expect(newTreeChanges).to.have.deep.property('0.0', 'create');
           expect(newTreeChanges).to.have.deep.property('0.1', 'ohai.txt');
-          expect(newTreeChanges).to.have.deep.property('0.2.relativePath', 'my-directory/subdir/ohai.txt');
+          expect(newTreeChanges).to.have.deep.property('0.2.relativePath', 'ohai.txt');
           expect(newTreeChanges).to.have.deep.property('0.2.mode');
           expect(newTreeChanges).to.have.deep.property('0.2.mtime');
           expect(newTreeChanges.length).to.eql(1);
@@ -2052,7 +2055,7 @@ describe('FSTree fs abstraction', function() {
         expect(tree.filtered({ include: ['*.js'] }).include).to.eql(['*.js']);
         expect(tree.filtered({ exclude: ['*.js'] }).exclude).to.eql(['*.js']);
         expect(tree.filtered({ files: ['foo.js'] }).files).to.eql(['foo.js']);
-        expect(tree.filtered({ cwd: 'my-directory' }).cwd).to.eql('my-directory');
+        expect(tree.filtered({ cwd: 'my-directory' }).cwd).to.eql('my-directory/');
 
         let projection = tree.filtered({
           include: ['*.js'],
@@ -2064,7 +2067,7 @@ describe('FSTree fs abstraction', function() {
 
         expect(projection.include).to.eql(['*.js']);
         expect(projection.exclude).to.eql(['*.css']);
-        expect(projection.cwd).to.eql('my-directory');
+        expect(projection.cwd).to.eql('my-directory/');
       });
     });
 
@@ -2440,7 +2443,7 @@ describe('FSTree fs abstraction', function() {
       expect(changes).to.have.deep.property('0.length', 3);
       expect(changes).to.have.deep.property('0.0', 'create');
       expect(changes).to.have.deep.property('0.1', 'goodbye.txt');
-      expect(changes).to.have.deep.property('0.2.relativePath', 'my-directory/goodbye.txt');
+      expect(changes).to.have.deep.property('0.2.relativePath', 'goodbye.txt');
       expect(changes).to.have.deep.property('0.2.mode', 0);
       expect(changes).to.have.deep.property('0.2.mtime');
     });
@@ -2467,11 +2470,13 @@ describe('FSTree fs abstraction', function() {
             entry[0],
             entry[1],
             { relativePath: entry[0] === 'mkdir' ? entry[1] + '/' : entry[1],
-              basePath,
+              basePath: '',
               mode: entry[0] === 'mkdir' ? 16877 : 33188,
               size: 0,
               mtime: 0,
+              checksum: 0,
               isDirectory: {},
+              _projection: {},
             }];
         });
       };
@@ -2480,7 +2485,10 @@ describe('FSTree fs abstraction', function() {
         return changes.map(entry => {
           entry[2].size = 0;
           entry[2].mtime = 0;
+          entry[2].checksum = 0;
+          entry[2].basePath = '';
           entry[2].isDirectory = {};
+          entry[2]._projection = {};
           return entry;
         });
       };
@@ -2512,14 +2520,24 @@ describe('FSTree fs abstraction', function() {
           root: ROOT,
           srcTree: true,
         });
+
+        fixturify.writeSync(ROOT2, {});
       });
 
       afterEach(function() {
         fs.removeSync(ROOT);
+        fs.removeSync(ROOT2);
+      });
+
+      it('should throw error when we write to it', function() {
+        expect(function() {
+          tree.writeFileSync('b/somefile.txt', 'blah')
+        }).to.throw('NOPE, operation: writeFile');
       });
 
       it('include filters with parent dir', function() {
         tree.include = ['**/one.css'];
+
         let changes = makeComparable(tree.changes());
 
         let expectedChanges = getExpectedChanges([
@@ -2530,19 +2548,17 @@ describe('FSTree fs abstraction', function() {
         expect(changes).to.have.deep.equal(expectedChanges);
       });
 
-
       it('include filters with one symlinked dir', function() {
-
         fs.mkdirSync(`${ROOT}/c`);
 
         let out = new FSTree({
           root: `${ROOT}/c`,
         });
-
         out.symlinkSyncFromEntry(tree, `a`, 'd')
-
-        out.include = ['**/**.css'];
+        out.include = ['**/*.css'];
         let patches= out.changes();
+        console.log(patches);
+
         let changes = makeComparable(patches);
         let expectedChanges = getExpectedChanges([
           ['mkdir', 'd'],
@@ -2550,12 +2566,11 @@ describe('FSTree fs abstraction', function() {
           ['create', 'd/bar/two.css'],
           ['mkdir', 'd/foo'],
           ['create', 'd/foo/one.css']], tree.root);
-
         expect(changes).to.have.deep.equal(expectedChanges);
       });
 
 
-      it.only('include filters with nested symlinked dir', function() {
+      it('include filters with nested symlinked dir', function() {
 
         fs.mkdirSync(`${ROOT}/c`);
         fs.mkdirSync(`${ROOT}/e`);
@@ -2569,7 +2584,6 @@ describe('FSTree fs abstraction', function() {
         let out2 = new FSTree({
           root: `${ROOT}/e`,
         });
-
         out2.symlinkSyncFromEntry(out1, `f`, 'd')
 
         out2.include = ['**/**.css'];
@@ -2578,57 +2592,52 @@ describe('FSTree fs abstraction', function() {
 
         console.log(patches);
 
-       // let changes = makeComparable(patches);
-       //  let expectedChanges = getExpectedChanges([
-       //    ['mkdir', 'd'],
-       //    ['mkdir', 'd/bar'],
-       //    ['create', 'd/bar/two.css'],
-       //    ['mkdir', 'd/foo'],
-       //    ['create', 'd/foo/one.css']], tree.root);
-       //
-       // expect(changes).to.have.deep.equal(expectedChanges);
+       let changes = makeComparable(patches);
+        let expectedChanges = getExpectedChanges([
+          ['mkdir', 'd'],
+          ['mkdir', 'd/bar'],
+          ['create', 'd/bar/two.css'],
+          ['mkdir', 'd/foo'],
+          ['create', 'd/foo/one.css']], tree.root);
+
+       expect(changes).to.have.deep.equal(expectedChanges);
       });
 
 
+      it('include filters with nested symlinked dir and cwd', function() {
 
-      // it.only('include filters with nested symlinked dir and cwd', function() {
-      //
-      //   fs.mkdirSync(`${ROOT}/c`);
-      //   fs.mkdirSync(`${ROOT}/e`);
-      //
-      //   let out1 = new FSTree({
-      //     root: `${ROOT}/c`,
-      //   });
-      //
-      //   out1.symlinkSyncFromEntry(tree, `a`, 'f')
-      //
-      //   let out2 = new FSTree({
-      //     root: `${ROOT}/e`,
-      //   });
-      //
-      //   out2.symlinkSyncFromEntry(out1, `f`, 'd')
-      //
-      //   out2.include = ['**/**.css'];
-      //   debugger;
-      //   let patches= out2.changes();
-      //
-      //   console.log(patches);
-      //
-      //   //  let changes = makeComparable(patches);
-      //   //   let expectedChanges = getExpectedChanges([
-      //   //     ['mkdir', 'd'],
-      //   //     ['mkdir', 'd/bar'],
-      //   //     ['create', 'd/bar/two.css'],
-      //   //     ['mkdir', 'd/foo'],
-      //   //     ['create', 'd/foo/one.css']], tree.root);
-      //   //
-      //   //  expect(changes).to.have.deep.equal(expectedChanges);
-      // });
+        let tree3 = new FSTree({
+          root: `${ROOT}`,
+          cwd: 'b',
+        });
+
+        tree3.symlinkSyncFromEntry(tree, `a`, 'b');
+
+        let tree2 = new FSTree({
+          root: `${ROOT}`,
+        });
+
+        tree2.symlinkSyncFromEntry(tree3, `b`, 'b');
+
+        let tree1 = new FSTree({
+          root: `${ROOT}`,
+          cwd: 'c/b/a'
+        });
+
+        tree1.symlinkSyncFromEntry(tree2, `b`, '/');
+
+        tree1.include = ['four.txt']
+
+        let patches = tree1.changes();
+        let expectedChanges = getExpectedChanges([
+          ['create', 'four.txt']], tree.root);
+
+        expect(changes).to.have.deep.equal(expectedChanges);
 
 
+      });
 
       it('include filters with multiple symlinked dir', function() {
-
         fs.mkdirSync(`${ROOT}/c`);
         fs.mkdirSync(`${ROOT}/e`);
 
@@ -2637,11 +2646,6 @@ describe('FSTree fs abstraction', function() {
         });
 
         out.symlinkSyncFromEntry(tree, `a`, 'f')
-
-        let out2 = new FSTree({
-          root: `${ROOT}/e`,
-        });
-
         out.symlinkSyncFromEntry(tree, `b`, 'd')
 
         out.include = ['**/**.css'];
@@ -2658,11 +2662,35 @@ describe('FSTree fs abstraction', function() {
         expect(changes).to.have.deep.equal(expectedChanges);
       });
 
+      it.skip('include filters with multiple symlinked dir with included files', function() {
+        let out = new FSTree({
+          root: `${ROOT2}`,
+        });
 
+        out.symlinkSyncFromEntry(tree, `a`, 'f')
+        out.symlinkSyncFromEntry(tree, `b`, 'd')
 
+        let out2 = FSTree.fromParent(out,{
+          include : ['**/*.js'],
+        });
+        let patches = out2.changes();
+
+        let changes = makeComparable(patches);
+
+        let expectedChanges = getExpectedChanges([
+          ['mkdir', 'd'],
+          ['create', 'd/four.js'],
+          ['mkdir', 'f'],
+          ['mkdir', 'f/bar'],
+          ['create', 'f/bar/two.js'],
+          ['mkdir', 'f/foo'],
+          ['create', 'f/foo/one.js']], tree.root);
+        expect(changes).to.have.deep.equal(expectedChanges);
+      });
 
       it('exclude filters with parent dir', function() {
         tree.exclude = ['**/*.js', '**/two.css'];
+        debugger;
         let changes = makeComparable(tree.changes());
         let expectedChanges = getExpectedChanges([
           ['mkdir', 'a'],
