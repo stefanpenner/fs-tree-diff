@@ -31,14 +31,14 @@ describe('Entry', function() {
     });
 
     it('strips trailing /', function() {
-      expect(new Entry('/foo/', 0, 0, Entry.DIRECTORY_MODE).relativePath).to.eql('/foo');
+      expect(new Entry('/foo/', 0, 0, Entry.DIRECTORY_MODE).relativePath).to.eql('foo');
     });
   });
 
   describe('.fromPath', function () {
     it('infers directories from trailing /', function() {
       let entry = Entry.fromPath('/foo/');
-      expect(entry.relativePath).to.equal('/foo');
+      expect(entry.relativePath).to.equal('foo');
       expect(entry.size).to.equal(0);
       expect(entry.mtime).to.be.gt(0);
       expect(isDirectory(entry)).to.eql(true);
