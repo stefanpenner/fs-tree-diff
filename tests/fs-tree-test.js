@@ -914,6 +914,41 @@ describe('FSTree', function() {
       expect(fs.readFileSync(barOutput, 'utf-8')).to.equal('boo');
     });
 
+    it('does not bomb when trying to unlink an already removed file', function() {
+      var firstTree = FSTree.fromEntries(walkSync.entries(inputDir));
+
+      var fooInput = path.join(inputDir, 'foo/index.js');
+      var barInput = path.join(inputDir, 'bar/index.js');
+      var barOutput = path.join(outputDir, 'bar/index.js')
+
+      fs.outputFileSync(fooInput, 'foo'); // mkdir + create
+      fs.outputFileSync(barInput, 'bar'); // mkdir + create
+
+      var secondTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      var patch = firstTree.calculatePatch(secondTree);
+
+      // copy everything for setup
+      FSTree.applyPatch(inputDir, outputDir, patch);
+      expect(walkSync(outputDir)).to.deep.equal([
+        'bar/',
+        'bar/index.js',
+        'foo/',
+        'foo/index.js'
+      ]);
+
+      fs.removeSync(barInput); // unlink + rmdir
+      fs.removeSync(barOutput); // unlink + rmdir
+      var thirdTree = FSTree.fromEntries(walkSync.entries(inputDir));
+      patch = secondTree.calculatePatch(thirdTree);
+
+      FSTree.applyPatch(inputDir, outputDir, patch);
+      expect(walkSync(outputDir)).to.deep.equal([
+        'bar/',
+        'foo/',
+        'foo/index.js'
+      ]);
+    });
+
     it('supports custom delegate methods', function() {
       var inputDir = 'tmp/fixture/input';
       var outputDir = 'tmp/fixture/output';
