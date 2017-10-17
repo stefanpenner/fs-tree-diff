@@ -1,5 +1,9 @@
 # master
 
+# v0.5.7
+
+* avoid errors when attempting to unlink a file that has already been removed.
+
 # v0.5.5
 
 * add `Entry.fromStat` thanks @trentmwillis
