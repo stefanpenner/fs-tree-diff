@@ -1,3 +1,5 @@
+// Type definitions for "fs-tree-diff"
+// Definitions by: Adam Miller <https://github.com/amiller-gh>
 import fs from "fs";
 
 declare namespace FSTree {
