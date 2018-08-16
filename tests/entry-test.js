@@ -57,16 +57,19 @@ describe('Entry', function() {
 
       fs.outputFileSync(path, '');
 
-      var stat = fs.statSync(path);
-      var entry = Entry.fromStat(path, stat);
+      try {
 
-      expect(entry.isDirectory()).to.not.be.ok;
-      expect(entry.mode).to.equal(stat.mode);
-      expect(entry.size).to.equal(stat.size);
-      expect(entry.mtime).to.equal(stat.mtime);
-      expect(entry.relativePath).to.equal(path);
+        var stat = fs.statSync(path);
+        var entry = Entry.fromStat(path, stat);
 
-      fs.unlink(path);
+        expect(entry.isDirectory()).to.not.be.ok;
+        expect(entry.mode).to.equal(stat.mode);
+        expect(entry.size).to.equal(stat.size);
+        expect(entry.mtime).to.equal(stat.mtime);
+        expect(entry.relativePath).to.equal(path);
+      } finally {
+        fs.unlinkSync(path);
+      }
     });
 
     it('creates a correct entry for a directory', function() {
