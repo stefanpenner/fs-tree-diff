@@ -3,7 +3,7 @@
   "version": "0.5.7",
   "description": "Backs out file tree changes",
   "main": "lib/index.js",
-  "types": "index.d.js",
+  "types": "lib/index.d.ts",
   "files": [
     "lib"
   ],
