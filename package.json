@@ -28,6 +28,9 @@
     "mocha": "^2.3.3",
     "walk-sync": "^0.3.1"
   },
+  "engines": {
+    "node": "6.* || 8.* || >= 10.*"
+  },
   "repository": {
     "type": "git",
     "url": "git://github.com/stefanpenner/fs-tree-diff.git"
