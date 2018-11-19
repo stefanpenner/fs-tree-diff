@@ -36,16 +36,16 @@ declare namespace FSTree {
 }
 
 declare class FSTree {
-  constructor(options?: PartialFSTreeOptions): FSTree;
-  calculatePatch(tree: FSTree, isEqual?: (a: FSEntry, b: FSEntry) => boolean): Patch[];
-  calculateAndApplyPatch(tree: FSTree, inputDir: string, outputDir: string, delegate?: FSTreeDelegates): void;
-  addEntries(entries: Entry[], options?: PartialFSTreeOptions): void;
-  addPaths(paths: string[], options?: PartialFSTreeOptions): void;
-  forEach(cb: (entry: FSEntry) => void, context?: any): void;
+  constructor(options?: FSTree.PartialFSTreeOptions);
+  calculatePatch(tree: FSTree, isEqual?: (a: FSTree.Entry, b: FSTree.Entry) => boolean): FSTree.Patch[];
+  calculateAndApplyPatch(tree: FSTree, inputDir: string, outputDir: string, delegate?: FSTree.FSTreeDelegates): void;
+  addEntries(entries: FSTree.Entry[], options?: FSTree.PartialFSTreeOptions): void;
+  addPaths(paths: string[], options?: FSTree.PartialFSTreeOptions): void;
+  forEach(cb: (entry: FSTree.Entry) => void, context?: any): void;
   static fromPaths(paths: string[]): FSTree;
-  static fromEntries(entries: Entry[]): FSTree;
-  static applyPatch(inputDir: string, outputDir: string, patch: Patch[]): void;
-  static defaultIsEqual(a: FSEntry, b: FSEntry): boolean;
+  static fromEntries(entries: FSTree.Entry[]): FSTree;
+  static applyPatch(inputDir: string, outputDir: string, patch: FSTree.Patch[]): void;
+  static defaultIsEqual(a: FSTree.Entry, b: FSTree.Entry): boolean;
 }
 
 export = FSTree;
