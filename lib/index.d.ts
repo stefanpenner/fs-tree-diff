@@ -37,7 +37,7 @@ declare namespace FSTree {
 
 declare class FSTree {
   constructor(options?: PartialFSTreeOptions): FSTree;
-  calculatePatch(tree: FSTree, isEqual?: (a: FSTree, b: FSTree) => boolean): Patch[];
+  calculatePatch(tree: FSTree, isEqual?: (a: FSEntry, b: FSEntry) => boolean): Patch[];
   calculateAndApplyPatch(tree: FSTree, inputDir: string, outputDir: string, delegate?: FSTreeDelegates): void;
   addEntries(entries: Entry[], options?: PartialFSTreeOptions): void;
   addPaths(paths: string[], options?: PartialFSTreeOptions): void;
@@ -45,7 +45,7 @@ declare class FSTree {
   static fromPaths(paths: string[]): FSTree;
   static fromEntries(entries: Entry[]): FSTree;
   static applyPatch(inputDir: string, outputDir: string, patch: Patch[]): void;
-  static isEqual(a: FSTree, b: FSTree): boolean;
+  static defaultIsEqual(a: FSEntry, b: FSEntry): boolean;
 }
 
 export = FSTree;
