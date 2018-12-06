@@ -1,6 +1,6 @@
 // Type definitions for "fs-tree-diff"
 // Definitions by: Adam Miller <https://github.com/amiller-gh>
-import fs from "fs";
+import { Stats } from "fs";
 
 declare namespace FSTree {
   export type ChangeType = "unlink" | "rmdir" | "mkdir" | "create" | "change";
@@ -24,7 +24,7 @@ declare namespace FSTree {
     mtime: Date;
     isDirectory(): boolean;
     isFile(): boolean;
-    static fromStat(relativePath: string, stat: fs.Stats): Entry;
+    static fromStat(relativePath: string, stat: Stats): Entry;
   }
 
   export interface FSTreeOptions {
@@ -48,4 +48,4 @@ declare class FSTree {
   static defaultIsEqual(a: FSTree.Entry, b: FSTree.Entry): boolean;
 }
 
-export = FSTree;
+export default FSTree;
