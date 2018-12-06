@@ -1,6 +1,6 @@
 {
   "name": "fs-tree-diff",
-  "version": "0.5.9",
+  "version": "1.0.1",
   "description": "Backs out file tree changes",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
