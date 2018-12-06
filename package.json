@@ -8,7 +8,9 @@
     "lib"
   ],
   "scripts": {
-    "test": "mocha tests/",
+    "test": "npm run test:js && npm run test:types",
+    "test:js": "mocha tests/",
+    "test:types": "tsc --noEmit tests.ts/index.ts",
     "test:debug": "mocha debug tests/"
   },
   "keywords": [
@@ -23,9 +25,11 @@
     "symlink-or-copy": "^1.1.8"
   },
   "devDependencies": {
+    "@types/node": "^10.12.11",
     "chai": "^3.3.0",
     "fs-extra": "^1.0.0",
     "mocha": "^2.3.3",
+    "typescript": "^3.2.1",
     "walk-sync": "^0.3.1"
   },
   "engines": {
