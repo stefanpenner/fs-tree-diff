@@ -48,4 +48,4 @@ declare class FSTree {
   static defaultIsEqual(a: FSTree.Entry, b: FSTree.Entry): boolean;
 }
 
-export default FSTree;
+export = FSTree;
