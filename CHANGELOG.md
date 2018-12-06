@@ -1,5 +1,9 @@
 # master
 
+# 1.0.2
+
+* fix type module export thanks @dfreeman
+
 # 1.0.1
 
 * fix errors in type definitions thanks @dfreeman
