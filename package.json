@@ -8,10 +8,11 @@
     "lib"
   ],
   "scripts": {
-    "test": "npm run test:js && npm run test:types",
-    "test:js": "mocha tests/",
-    "test:types": "tsc --noEmit tests.ts/index.ts",
-    "test:debug": "mocha debug tests/"
+    "test": "npm run test:js",
+    "test:js": "mocha --require ts-node/register tests/*-test.ts",
+    "test:js:debug": "mocha debug --require ts-node/register tests/*-test.ts",
+    "build": "tsc",
+    "prepublish": "tsc"
   },
   "keywords": [
     "broccoli"
@@ -19,17 +20,22 @@
   "author": "Stefan Penner, David J. Hamilton, Chad Hietala",
   "license": "MIT",
   "dependencies": {
+    "@types/symlink-or-copy": "^1.2.0",
     "heimdalljs-logger": "^0.1.7",
     "object-assign": "^4.1.0",
     "path-posix": "^1.0.0",
     "symlink-or-copy": "^1.1.8"
   },
   "devDependencies": {
-    "@types/node": "^10.12.11",
+    "@types/chai": "^4.1.7",
+    "@types/fs-extra": "^5.0.4",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^10.12.21",
     "chai": "^3.3.0",
     "fs-extra": "^1.0.0",
     "mocha": "^2.3.3",
-    "typescript": "^3.2.1",
+    "ts-node": "^8.0.2",
+    "typescript": "^3.3.3",
     "walk-sync": "^0.3.1"
   },
   "engines": {

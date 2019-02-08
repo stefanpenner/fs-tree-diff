@@ -1,20 +1,20 @@
-'use strict';
+import fs = require('fs-extra');
+import chai = require('chai');
+import Entry from '../lib/entry';
 
-var fs = require('fs-extra');
-var expect = require('chai').expect;
-var Entry = require('../lib/entry');
-
-var FIXTURE_DIR = 'fixture';
+const { expect } = chai;
+const FIXTURE_DIR = 'fixture';
 
 require('chai').config.truncateThreshold = 0;
 
 describe('Entry', function() {
   describe('constructor', function() {
-    var size = 1337;
-    var mtime = Date.now();
+    const size = 1337;
+    const mtime = Date.now();
 
     it('supports omitting mode for files', function() {
-      var entry = new Entry('/foo.js', size, mtime);
+      const entry = new Entry('/foo.js', size, mtime);
+
       expect(entry.relativePath).to.equal('/foo.js');
       expect(entry.size).to.equal(size);
       expect(entry.mtime).to.equal(mtime);
@@ -23,7 +23,8 @@ describe('Entry', function() {
     });
 
     it('supports omitting mode for directories', function() {
-      var entry = new Entry('/foo/', size, mtime);
+      const entry = new Entry('/foo/', size, mtime);
+
       expect(entry.relativePath).to.equal('/foo/');
       expect(entry.size).to.equal(size);
       expect(entry.mtime).to.equal(mtime);
@@ -32,7 +33,8 @@ describe('Entry', function() {
     });
 
     it('supports including manually defined mode', function() {
-      var entry = new Entry('/foo.js', size, mtime, 1);
+      const entry = new Entry('/foo.js', size, mtime, 1);
+
       expect(entry.relativePath).to.equal('/foo.js');
       expect(entry.size).to.equal(size);
       expect(entry.mtime).to.equal(mtime);
@@ -42,8 +44,9 @@ describe('Entry', function() {
 
     it('errors on a non-number mode', function() {
       expect(function() {
+        // @ts-ignore
         return new Entry('/foo.js', size, mtime, '1');
-      }).to.throw('Expected `mode` to be of type `number` but was of type `string` instead.')
+      }).to.throw(`Expected 'mode' to be of type 'number' but was of type 'string' instead.`);
     });
   });
 
@@ -53,14 +56,14 @@ describe('Entry', function() {
     });
 
     it('creates a correct entry for a file', function() {
-      var path = FIXTURE_DIR + '/index.js';
+      const path = FIXTURE_DIR + '/index.js';
 
       fs.outputFileSync(path, '');
 
       try {
 
-        var stat = fs.statSync(path);
-        var entry = Entry.fromStat(path, stat);
+        const stat = fs.statSync(path);
+        const entry = Entry.fromStat(path, stat);
 
         expect(entry.isDirectory()).to.not.be.ok;
         expect(entry.mode).to.equal(stat.mode);
@@ -73,12 +76,12 @@ describe('Entry', function() {
     });
 
     it('creates a correct entry for a directory', function() {
-      var path = FIXTURE_DIR + '/foo/';
+      const path = FIXTURE_DIR + '/foo/';
 
       fs.mkdirpSync(path);
 
-      var stat = fs.statSync(path);
-      var entry = Entry.fromStat(path, stat);
+      const stat = fs.statSync(path);
+      const entry = Entry.fromStat(path, stat);
 
       expect(entry.isDirectory()).to.be.ok;
       expect(entry.mode).to.equal(stat.mode);
