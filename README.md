@@ -78,18 +78,18 @@ which provides higher fidelity input, allowing FSTree to also detect changes.
 [walkSync.entries](https://github.com/joliss/node-walk-sync#entries).)
 
 ```js
-var walkSync = require('walk-sync');
+const walkSync = require('walk-sync');
 
 // path/to/root/foo.js
 // path/to/root/bar.js
-var current = new FSTree({
+const current = new FSTree({
   entries: walkSync.entries('path/to/root')
 });
 
 writeFileSync('path/to/root/foo.js', 'new content');
 writeFileSync('path/to/root/baz.js', 'new file');
 
-var next = new FSTree({
+const next = new FSTree({
   entries: walkSync.entries('path/to/root')
 });
 
@@ -196,11 +196,11 @@ They must also implement the following API:
 `FSTree.fromEntries` composes well with the output of `walkSync.entries`:
 
 ```js
-var walkSync = require('walk-sync');
+const walkSync = require('walk-sync');
 
 // path/to/root/foo.js
 // path/to/root/bar.js
-var current = FSTree.fromEntries(walkSync.entries('path/to/root'));
+const current = FSTree.fromEntries(walkSync.entries('path/to/root'));
 ```
 
 ## Change Calculation
@@ -222,7 +222,7 @@ User specified `isEqual` will often want to use the default `isEqual`, so it is 
 Example
 
 ```js
-var defaultIsEqual = FSTree.defaultIsEqual;
+const defaultIsEqual = FSTree.defaultIsEqual;
 
 function isEqualCheckingMeta(a, b) {
   return defaultIsEqual(a, b) && isMetaEqual(a, b);
@@ -239,9 +239,9 @@ When you want to apply changes from one tree to another easily, you can use the
 `FSTree.applyPatch` method. For example, given:
 
 ```js
-var patch = oldInputTree.calculatePatch(newInputTree);
-var inputDir = 'src';
-var outputDir = 'dist';
+const patch = oldInputTree.calculatePatch(newInputTree);
+const inputDir = 'src';
+const outputDir = 'dist';
 FSTree.applyPatch(inputDir, outputDir, patch);
 ```
 
@@ -250,8 +250,8 @@ non-destructive operations (`mkdir`, `create`, `change`). If you want to calcula
 and apply a patch without any intermediate operations, you can do:
 
 ```js
-var inputDir = 'src';
-var outputDir = 'dist';
+const inputDir = 'src';
+const outputDir = 'dist';
 oldInputTree.calculateAndApplyPatch(newInputTree, inputDir, outputDir);
 ```
 
@@ -259,7 +259,7 @@ You can optionally provide a delegate object to handle applying specific types
 of operations:
 
 ```js
-var createCount = 0;
+let createCount = 0;
 FSTree.applyPatch(inputDir, outputDir, patch, {
   create: function(inputPath, outputPath, relativePath) {
     createCount++;
