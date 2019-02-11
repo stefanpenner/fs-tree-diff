@@ -24,12 +24,12 @@ dir.  Although the ordering will be safe, a specific order is not guaranteed.
 A simple example:
 
 ```js
-var FSTree = require('fs-tree-diff');
-var current = FSTree.fromPaths([
+const FSTree = require('fs-tree-diff');
+const current = FSTree.fromPaths([
   'a.js'
 ]);
 
-var next = FSTree.fromPaths([
+const next = FSTree.fromPaths([
   'b.js'
 ]);
 
@@ -42,14 +42,14 @@ current.calculatePatch(next) === [
 A slightly more complicated example:
 
 ```js
-var FSTree = require('fs-tree-diff');
-var current = FSTree.fromPaths([
+const FSTree = require('fs-tree-diff');
+const current = FSTree.fromPaths([
   'a.js',
   'b/',
   'b/f.js'
 ]);
 
-var next = FSTree.fromPaths([
+const next = FSTree.fromPaths([
   'b.js',
   'b/',
   'b/c/',
