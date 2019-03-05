@@ -1,16 +1,15 @@
-'use strict';
+import chai = require('chai');
+import {
+  commonPrefix,
+  basename,
+  computeImpliedEntries,
+  sortAndExpand
+} from '../lib/util';
+import Entry from '../lib/entry';
 
-var expect = require('chai').expect;
-var util = require('../lib/util');
-var Entry = require('../lib/entry');
-
-var commonPrefix = util._commonPrefix;
-var basename = util._basename;
-var computeImpliedEntries = util._computeImpliedEntries;
-var sortAndExpand = util.sortAndExpand;
+const { expect } = chai;
 
 require('chai').config.truncateThreshold = 0;
-
 
 describe('commonPrefix', function() {
   it('computes no common prefix if none exists', function() {
@@ -49,12 +48,12 @@ describe('computeImpliedEntries', function() {
 
 describe('sortAndExpand', function() {
   it('sorts and expands entries in place', function() {
-    var entries = [
+    const entries = [
       new Entry('a/b/q/r/bar.js'),
       new Entry('a/b/c/d/foo.js'),
     ];
 
-    var sortedAndExpandedEntries = sortAndExpand(entries);
+    const sortedAndExpandedEntries = sortAndExpand(entries);
 
     expect(entries).to.equal(sortedAndExpandedEntries);
     expect(sortedAndExpandedEntries.map(function(e) { return e.relativePath;})).to.deep.equal([
