@@ -1,5 +1,9 @@
 # master
 
+# 2.0.0
+
+* port to typescript
+
 # 1.0.2
 
 * fix type module export thanks @dfreeman
