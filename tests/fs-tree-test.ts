@@ -2,8 +2,8 @@ import fs = require('fs-extra');
 import path = require('path');
 import chai = require('chai');
 import walkSync = require('walk-sync');
-import FSTree  = require('../lib/index');
-import Entry from '../lib/entry';
+import FSTree  = require('../src/index');
+import Entry from '../src/entry';
 
 const { expect } = chai;
 const context = describe;

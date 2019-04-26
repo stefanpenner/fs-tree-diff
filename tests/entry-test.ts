@@ -1,6 +1,6 @@
 import fs = require('fs-extra');
 import chai = require('chai');
-import Entry from '../lib/entry';
+import Entry from '../src/entry';
 
 const { expect } = chai;
 const FIXTURE_DIR = 'fixture';

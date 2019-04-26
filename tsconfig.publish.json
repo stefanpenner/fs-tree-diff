@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "lib",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "target": "es5",
+    "paths": {
+      "*": ["types/*"]
+    },
+    "baseUrl": "."
+  },
+  "include": ["src"]
+}
