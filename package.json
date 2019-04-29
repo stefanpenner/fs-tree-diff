@@ -9,8 +9,8 @@
   ],
   "scripts": {
     "test": "npm run test:js",
-    "test:js": "mocha --require ts-node/register tests/*-test.ts",
-    "test:js:debug": "mocha debug --require ts-node/register tests/*-test.ts",
+    "test:js": "mocha tests/*-test.js",
+    "test:js:debug": "mocha debug tests/*-test.js",
     "build": "tsc",
     "prepublish": "tsc"
   },
@@ -34,7 +34,6 @@
     "chai": "^3.3.0",
     "fs-extra": "^1.0.0",
     "mocha": "^2.3.3",
-    "ts-node": "^8.0.2",
     "typescript": "^3.3.3",
     "walk-sync": "^0.3.1"
   },
