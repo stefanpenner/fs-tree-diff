@@ -4,8 +4,8 @@ import {
   basename,
   computeImpliedEntries,
   sortAndExpand
-} from '../lib/util';
-import Entry from '../lib/entry';
+} from '../src/util';
+import Entry from '../src/entry';
 
 const { expect } = chai;
 
